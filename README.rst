@@ -1,46 +1,32 @@
 efene
 =====
 
-it's alive!
+Alternative syntax for the Erlang Programming Language focusing on simplicity, ease of use and programmer UX.
 
-Quick Start
------------
+visit `efene.org <http://efene.org>`_ for documentation and `quickstart <http://efene.org/quickstart.html>`_
 
-efene integrates with rebar3 so we will start with that.
+Build
+-----
 
-first download the app template for a basic efene app, you must do this only once::
+::
 
-    mkdir -p ~/.rebar3/templates && git clone https://github.com/efene/rebar3_efene_app_template.git ~/.rebar3/templates/ && rm -rf ~/.rebar3/templates/.git
+    make
 
-then create a folder for your app, change myapp for the name of your app::
+Use
+---
 
-    mkdir myapp
-    cd myapp
-    wget https://s3.amazonaws.com/rebar3/rebar3
-    chmod u+x rebar3
-    ./rebar3 new fn_app name=myapp
+For users we provide a `rebar3 plugin <http://efene.org/rebar-plugin.html>`_
+if you are developing there's a simple shell script to use efene while developing::
 
-now compile your code::
+    fn.sh beam file.fn
+    fn.sh rawlex file.fn
+    fn.sh lex file.fn
+    fn.sh ast file.fn
+    fn.sh mod file.fn
+    fn.sh erl file.fn
+    fn.sh erlast file.fn
+    fn.sh pprint file.fn
 
-    ./rebar3 efene
-
-you can now play with it, for now we will use the erlang shell::
-
-    ./rebar3 shell
-
-and call our function::
-
-    1> myapp:hello("World").
-    Hello World!ok
-
-note: the ok after hello world is the value returned by the hello function.
-
-now every time you do a change run::
-
-    ./rebar3 efene
-
-and it will recompile the changed files, it will also fetch deps and compile
-erlang modules in your project.
 
 License
 -------
