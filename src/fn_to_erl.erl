@@ -81,6 +81,16 @@ ast_to_ast({attr, _Line, [?Atom(Type)], _Params, _Result}=Ast, #{level := 0}=Sta
   when Type == type orelse Type == opaque ->
     fn_spec:type_to_spec(Ast, State);
 
+% ^_ <expr>
+ast_to_ast(?T(_Line, [?Var('_')], _), State) ->
+    R = 'fn compiler ignore',
+    {R, State};
+
+% #_ <val>
+ast_to_ast(?LTag(_Line, [?Var('_')], _), State) ->
+    R = 'fn compiler ignore',
+    {R, State};
+
 ast_to_ast(Ast, #{level := 0}=State) ->
     Line = element(2, Ast),
     State1 = add_error(State, invalid_top_level_expression, Line, {ast, Ast}),
@@ -108,16 +118,6 @@ ast_to_ast(?E(_Line, call_thread, {InitialVal, Calls}), State) ->
                                    ?E(CallLine, call, {Fun, NewArgs})
                 end, InitialVal, Calls),
     ast_to_ast(Threaded, State);
-
-% ^_ <expr>
-ast_to_ast(?T(_Line, [?Var('_')], _), State) ->
-    R = 'fn compiler ignore',
-    {R, State};
-
-% #_ <val>
-ast_to_ast(?LTag(_Line, [?Var('_')], _), State) ->
-    R = 'fn compiler ignore',
-    {R, State};
 
 % binary list
 ast_to_ast(?LTag(Line, [?Atom(b)], ?S(_LLine, list, TSList)), State) ->
