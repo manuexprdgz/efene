@@ -181,7 +181,6 @@ expr -> raw_expr : '$1'.
 
 raw_expr -> e_switch : '$1'.
 raw_expr -> e_when: '$1'.
-raw_expr -> e_begin: '$1'.
 raw_expr -> e_for: '$1'.
 raw_expr -> e_receive: '$1'.
 raw_expr -> e_try: '$1'.
@@ -217,6 +216,7 @@ raw_literal -> l_map_match : '$1'.
 raw_literal -> l_map_update : '$1'.
 raw_literal -> l_fn : '$1'.
 raw_literal -> l_fn_ref : '$1'.
+raw_literal -> e_begin: '$1'.
 
 raw_literal -> e_call : '$1'.
 raw_literal -> open expr close : '$2'.
