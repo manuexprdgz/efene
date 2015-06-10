@@ -168,21 +168,29 @@ atom_or_identifier(String, TokenLine) ->
             {atom, TokenLine, build_atom(String, TokenLine)}
      end.
 
-is_reserved("if")      -> true;
-is_reserved("else")    -> true;
-is_reserved("try")     -> true;
-is_reserved("catch")   -> true;
-is_reserved("receive") -> true;
 is_reserved("after")   -> true;
-is_reserved("case")    -> true;
-is_reserved("match")   -> true;
-is_reserved("when")    -> true;
-is_reserved("fn")      -> true;
-is_reserved("do")      -> true;
-is_reserved("for")     -> true;
-is_reserved("in")      -> true;
 is_reserved("begin")   -> true;
+is_reserved("case")    -> true;
+is_reserved("catch")   -> true;
+is_reserved("do")      -> true;
+is_reserved("else")    -> true;
 is_reserved("end")     -> true;
+is_reserved("fn")      -> true;
+is_reserved("for")     -> true;
+is_reserved("if")      -> true;
+is_reserved("in")      -> true;
+is_reserved("match")   -> true;
+is_reserved("receive") -> true;
+is_reserved("try")     -> true;
+is_reserved("when")    -> true;
+
+is_reserved("def")     -> true;
+
+is_reserved("cond")    -> true;
+is_reserved("fun")     -> true;
+is_reserved("let")     -> true;
+is_reserved("of")      -> true;
+
 is_reserved(_)         -> false.
 
 build_atom_string(Chars, Line, Len) ->

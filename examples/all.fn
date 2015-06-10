@@ -265,3 +265,36 @@ fn identity @public
   case X:
     X
 end
+
+def resource:
+    case post, "/foo/:bar", Req:
+        ok
+end
+
+def resource:
+    @name(bar)
+    case post, "/foo/:bar", Req:
+        ok
+end
+
+def resource foo:
+    case post, "/foo/:bar", Req:
+        ok
+end
+
+def resource foo:
+    @name(bar)
+    case post, "/foo/:bar", Req:
+        ok
+end
+
+def resource foo, "bar":
+    case post, "/foo/:bar", Req:
+        ok
+end
+
+def resource foo, "bar":
+    @name(bar)
+    case post, "/foo/:bar", Req:
+        ok
+end

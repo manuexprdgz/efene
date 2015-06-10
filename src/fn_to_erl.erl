@@ -17,7 +17,13 @@
 
 -include("efene.hrl").
 
-new_state(Module) -> #{module => Module, errors => [], warnings => [], attrs => [], level => 0}.
+new_state(Module) -> #{module => Module,
+                       errors => [],
+                       warnings => [],
+                       attrs => [],
+                       macro_funs => #{},
+                       macro_vals => #{},
+                       level => 0}.
 
 to_erl(Ast, Module) -> ast_to_ast(Ast, new_state(Module)).
 

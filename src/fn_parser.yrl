@@ -30,7 +30,8 @@ Nonterminals
     e_call e_call_do e_call_thread e_call_thread_funs
     e_assign e_send
     e_bool_and e_comp e_concat e_add e_mul e_unary
-    path path_item.
+    path path_item
+    e_def_tl.
 
 Terminals
     fn atom var integer float boolean string bstring colon end nl case else match when
@@ -39,7 +40,8 @@ Terminals
     open_map close_map split_def_op at arrow arrowend dot larrow larrowend
     assign send_op
     bool_or bool_orr bool_xor bool_and bool_andd comp_op concat_op add_op mul_op
-    bin_or bin_and bin_shift bin_not bool_not.
+    bin_or bin_and bin_shift bin_not bool_not
+    def.
 
 Rootsymbol program.
 
@@ -51,6 +53,7 @@ tl_exprs -> tl_expr nl tl_exprs : ['$1'|'$3'].
 
 tl_expr -> e_fn_tl: '$1'.
 tl_expr -> attr : '$1'.
+tl_expr -> e_def_tl: '$1'.
 tl_expr -> literal : '$1'.
 
 e_fn_tl -> fn l_atom e_case end:
@@ -63,6 +66,34 @@ e_fn_tl -> fn l_atom attrs e_case end:
     Attrs = '$3',
     Cases = '$4',
     {expr, line('$1'), fn, {Name, Attrs, Cases}}.
+
+e_def_tl -> def l_atom colon e_case end:
+    Name = '$2',
+    Args = [],
+    Attrs = [],
+    Cases = '$4',
+    {expr, line('$1'), def, {Name, Args, Attrs, Cases}}.
+
+e_def_tl -> def l_atom colon attrs e_case end:
+    Name = '$2',
+    Args = [],
+    Attrs = '$4',
+    Cases = '$5',
+    {expr, line('$1'), def, {Name, Args, Attrs, Cases}}.
+
+e_def_tl -> def l_atom seq_items colon e_case end:
+    Name = '$2',
+    Args = '$3',
+    Attrs = [],
+    Cases = '$5',
+    {expr, line('$1'), def, {Name, Args, Attrs, Cases}}.
+
+e_def_tl -> def l_atom seq_items colon attrs e_case end:
+    Name = '$2',
+    Args = '$3',
+    Attrs = '$5',
+    Cases = '$6',
+    {expr, line('$1'), def, {Name, Args, Attrs, Cases}}.
 
 e_case -> e_cases : {expr, line('$1'), 'case', '$1'}.
 
