@@ -236,6 +236,27 @@ fn use_records
         print("post ~p", [Post])
 end
 
+fn use_maps
+    case:
+        Account1 = {username: 'bob', password: 'secret', email: 'bob@nickelodeon.com'}
+
+        print("account1 ~p", [Account1])
+        print("account1 username ~p email ~p", [maps.get(username, Account1),
+                                                maps.get(email, Account1)])
+
+        {username = Username, email = Email} = Account1
+        Account2 = Account1#{email: 'bob@nickelodeon.com'}
+
+        print("account1 username ~p email ~p", [Username, Email])
+
+        print("account2 ~p", [Account2])
+        print("account2 username ~p email ~p", [maps.get(username, Account2),
+                                                maps.get(email, Account2)])
+
+        Post = {title: "My Post"}
+        print("post ~p", [Post])
+end
+
 
 fn main @public
     case:
@@ -330,6 +351,7 @@ fn main @public
         print_div_result(divide_two_typed(8, 0))
 
         use_records()
+        use_maps()
 
         spawn_receive()
 end
