@@ -238,7 +238,7 @@ end
 
 fn use_maps
     case:
-        Account1 = {username: 'bob', password: 'secret', email: 'bob@nickelodeon.com'}
+        Account1 = {username: 'bob', password: 'secret', email: 'bob@gmail.com'}
 
         print("account1 ~p", [Account1])
         print("account1 username ~p email ~p", [maps.get(username, Account1),
