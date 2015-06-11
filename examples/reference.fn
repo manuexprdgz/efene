@@ -3,13 +3,40 @@ fn return_one
     case: 1
 end
 
+fn add_two
+    case A, B: A + B
+end
+
 fn bool_to_text
     case true: 'true'
     case false: 'false'
+    else: 'not a boolean'
 end
 
-fn add_two
-    case A, B: A + B
+fn bool_to_text_1
+    case true: 'true'
+    case false: 'false'
+    case _: 'not a boolean'
+end
+
+fn two_are_the_same
+    case A, A: true
+    case _, _: false
+end
+
+fn two_are_the_same_1
+    case A, A: true
+    else: false
+end
+
+fn two_are_the_same_2
+    case _A, _A: true
+    else: false
+end
+
+fn two_are_the_same_3
+    case A, B when A == B: true
+    else: false
 end
 
 fn divide_two_unsafe
@@ -76,7 +103,7 @@ fn any_to_string
         "{" ++ string.join(KVsStrs, ", ") ++ "}"
     case V when is_list(V):
         "[" ++ items_to_string(V) ++ "]"
-end 
+end
 
 fn any_to_string_1
     case Value:
@@ -104,7 +131,7 @@ fn any_to_string_1
             case V when is_list(V):
                 "[" ++ items_to_string(V) ++ "]"
        end
-end 
+end
 
 fn any_to_string_2
     case V:
@@ -131,7 +158,7 @@ fn any_to_string_2
         else is_list(V):
             "[" ++ items_to_string(V) ++ "]"
         end
-end 
+end
 
 fn print_any
     case V: print(any_to_string(V))
@@ -149,12 +176,12 @@ fn receive_and_print
               print("Nothing received after 1000ms")
         end
 end
-                                
+
 fn spawn_receive
     case:
         OuterPid = self()
         spawn(fn case:
-              SpawnPid = self() 
+              SpawnPid = self()
               print("Process ~p sending to ~p", [SpawnPid, OuterPid])
               OuterPid ! ping
         end)
@@ -264,10 +291,28 @@ fn main @public
         print("hi ~p", ["bob"])
         print(any_to_string(return_one()))
 
+        print_any(add_two(1, 2))
+
         print(any_to_string(bool_to_text(true)))
         print(any_to_string(bool_to_text(false)))
+        print(any_to_string(bool_to_text(42)))
 
-        print_any(add_two(1, 2))
+        print(any_to_string(bool_to_text_1(true)))
+        print(any_to_string(bool_to_text_1(false)))
+        print(any_to_string(bool_to_text_1(42)))
+
+        print("1 == 1? ~p", [two_are_the_same(1, 1)])
+        print("1 == 2? ~p", [two_are_the_same(1, 2)])
+
+        print("1 == 1? ~p", [two_are_the_same_1(1, 1)])
+        print("1 == 2? ~p", [two_are_the_same_1(1, 2)])
+
+        print("1 == 1? ~p", [two_are_the_same_2(1, 1)])
+        print("1 == 2? ~p", [two_are_the_same_2(1, 2)])
+
+        print("1 == 1? ~p", [two_are_the_same_3(1, 1)])
+        print("1 == 2? ~p", [two_are_the_same_3(1, 2)])
+
         print_any(divide_two(8, 2))
         print_any(divide_two(8, 0))
 
