@@ -251,13 +251,21 @@ ast_to_ast(?E(Line, 'try', {Body, Catch, After}), State) ->
     R = {'try', Line, EBody, [], lists:reverse(ECatch), EAfter},
     {R, State3};
 
-% receive
+% receive without case clauses
+ast_to_ast(?E(Line, 'receive', {[], {After, AfterBody}}), State) ->
+    with_childs(State, After, AfterBody,
+                fun(EAfter, EAfterBody) ->
+                        {'receive', Line, [], EAfter, EAfterBody}
+                end);
+
+% receive with case clauses and no after
 ast_to_ast(?E(Line, 'receive', {?E(_CLine, 'case', Clauses), noafter}), State) ->
     {EClauses, State1} = ast_to_ast(Clauses, State),
     TupleClauses = lists:map(fun to_tuple_clause/1, EClauses),
     R= {'receive', Line, TupleClauses},
     {R, State1};
 
+% receive with case clauses and after
 ast_to_ast(?E(Line, 'receive', {?E(_CLine, 'case', Clauses), {After, AfterBody}}), State) ->
     with_childs(State, Clauses, After, AfterBody,
                 fun(EClauses, EAfter, EAfterBody) ->

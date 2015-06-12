@@ -116,6 +116,9 @@ e_receive -> receive e_case end:
 e_receive -> receive e_case after literal colon body end:
     {expr, line('$1'), 'receive', {'$2', {'$4', '$6'}}}.
 
+e_receive -> receive after literal colon body end:
+    {expr, line('$1'), 'receive', {[], {'$3', '$5'}}}.
+
 e_try -> try body after body end:
     {expr, line('$1'), 'try', {'$2', nocatch, '$4'}}.
 
