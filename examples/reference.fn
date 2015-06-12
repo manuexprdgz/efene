@@ -394,15 +394,15 @@ fn main @public
             print("I: ~p", [I])
         end
 
-        for I1 in lists.seq(1, 10); I1 % 2 == 0:
+        for I1 in lists.seq(1, 10); when I1 % 2 == 0:
             print("I1: ~p", [I1])
         end
 
-        for I2 in lists.seq(1, 10); I2 % 2 == 0; I2 != 8:
+        for I2 in lists.seq(1, 10); when I2 % 2 == 0; when I2 != 8:
             print("I2: ~p", [I2])
         end
 
-        for I3 in lists.seq(1, 4); J3 in lists.seq(1, 4); I3 != J3:
+        for I3 in lists.seq(1, 4); J3 in lists.seq(1, 4); when I3 != J3:
             print("I3, J3: ~p, ~p", [I3, J3])
         end
 
