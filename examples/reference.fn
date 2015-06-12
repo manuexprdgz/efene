@@ -68,10 +68,20 @@ end
 fn print_div_result_1
     case A, B:
          match divide_two(A, B):
+            case (ok, Result):
+                print("result is: ~p", [Result])
+            case (error, Reason):
+                print("error is: ~p", [Reason])
+         end
+end
+
+fn print_div_result_2
+    case A, B:
+         match divide_two(A, B):
             case ok, Result:
-                 print("result of ~p/~p is: ~p", [A, B, Result])
+                print("result is: ~p", [Result])
             case error, Reason:
-                 print("error of ~p/~p is: ~p", [A, B, Reason])
+                print("error is: ~p", [Reason])
          end
 end
 
@@ -191,6 +201,16 @@ fn spawn_receive
         receive_and_print()
 end
 
+fn sleep
+    case TimeMs:
+         print("sleeping ~pms", [TimeMs])
+
+         receive
+         after TimeMs:
+               ok
+         end
+end
+
 fn dynamic_call
     @doc("this function shows all the ways you can call a function")
     case:
@@ -229,9 +249,8 @@ end
 @record(account) -> (username, password, email)
 @record(post) -> (title is string(), content = "" is string(), author = "anonymous")
 
-@type(result(V, E)) -> (error, E) or (ok, V)
-
-@type(division_error) -> result(division_by_zero, number())
+@type(result(E, V)) -> (error, E) or (ok, V)
+@type(division_error()) -> result(division_by_zero, number())
 
 fn divide_two_typed
     @spec(number(), number()) -> division_error()
@@ -284,6 +303,19 @@ fn use_maps
         print("post ~p", [Post])
 end
 
+fn tagged_values
+    case:
+        print("the code for character C is ~p", [#c "C"])
+
+        Hello1 = "hello"
+        Hello2 = [#c "h", #c "e", #c "l", #c "l", #c "o"]
+        Hello3 = [#c "h" :: [#c "e" :: [#c "l" :: [#c "l" :: [#c "o" :: []]]]]]
+
+        print("this three strings are equivalent ~p ~p ~p", [Hello1, Hello2, Hello3])
+
+        print("this two atoms are equivalent ~p ~p", [#atom "an atom", `an atom`])
+        print("this print is at line ~p in module ~p", [#i line, #i module])
+end
 
 fn main @public
     case:
@@ -332,11 +364,21 @@ fn main @public
                 print("After division attempt")
         end
 
+        try
+            throw(hi)
+        catch
+            case E2:
+                 print("Error was: ~p", [E2])
+        end
+
         print_div_result(divide_two(8, 2))
         print_div_result(divide_two(8, 0))
 
         print_div_result_1(8, 2)
         print_div_result_1(8, 0)
+
+        print_div_result_2(8, 2)
+        print_div_result_2(8, 0)
 
         print(any_to_string_1('hi'))
         print(any_to_string_1(some_atom))
@@ -364,13 +406,19 @@ fn main @public
             print("I3, J3: ~p, ~p", [I3, J3])
         end
 
-        print_any(begin
-            A = 8
-            B = 0
-            divide_two(A, B)
-        end)
+        io.format("block result: ~p", [begin
+                             A = 8
+                             B = 0
+                             divide_two(A, B)
+                         end])
 
         print(any_to_string_1([1 :: [2 :: [3 :: []]]]))
+
+        [One, Two, Three, Four] = [1, 2, 3, 4]
+        print("items on the list are: ~p ~p ~p ~p", [One, Two, Three, Four])
+        print("the list is ~p", [[1, 2, 3, 4]])
+        print("the list is ~p", [[1 :: [2 :: [3 :: []]]]])
+
         [Head1 :: Tail1] = [1, 2, 3, 4]
         [Head2 :: Tail2] = [1]
         print("head ~p, tail ~p", [Head1, Tail1])
@@ -390,7 +438,7 @@ fn main @public
 
         dynamic_call()
 
-        print("this print is at line ~p in module ~p", [#i line, #i module])
+        tagged_values()
 
         print_div_result(divide_two_typed(8, 2))
         print_div_result(divide_two_typed(8, 0))
@@ -399,4 +447,5 @@ fn main @public
         use_maps()
 
         spawn_receive()
+        sleep(50)
 end
