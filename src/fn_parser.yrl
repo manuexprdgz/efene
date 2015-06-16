@@ -162,16 +162,16 @@ e_comp -> e_concat : '$1'.
 e_concat -> e_add concat_op e_concat : op('$2', '$1', '$3').
 e_concat -> e_add : '$1'.
 
-e_add -> e_mul add_op e_add : op('$2', '$1', '$3').
-e_add -> e_mul bool_orr e_add : op('$2', '$1', '$3').
-e_add -> e_mul bool_xor e_add : op('$2', '$1', '$3').
-e_add -> e_mul bin_shift e_add : op('$2', '$1', '$3').
-e_add -> e_mul bin_or e_add : op('$2', '$1', '$3').
+e_add -> e_add add_op e_mul : op('$2', '$1', '$3').
+e_add -> e_add bool_orr e_mul : op('$2', '$1', '$3').
+e_add -> e_add bool_xor e_mul : op('$2', '$1', '$3').
+e_add -> e_add bin_shift e_mul : op('$2', '$1', '$3').
+e_add -> e_add bin_or e_mul : op('$2', '$1', '$3').
 e_add -> e_mul : '$1'.
 
-e_mul -> e_unary mul_op e_mul : op('$2', '$1', '$3').
-e_mul -> e_unary bool_andd e_mul : op('$2', '$1', '$3').
-e_mul -> e_unary bin_and e_mul : op('$2', '$1', '$3').
+e_mul -> e_mul mul_op e_unary : op('$2', '$1', '$3').
+e_mul -> e_mul bool_andd e_unary : op('$2', '$1', '$3').
+e_mul -> e_mul bin_and e_unary : op('$2', '$1', '$3').
 e_mul -> e_unary : '$1'.
 
 e_unary -> bin_not literal: unary_op('$1', '$2').
