@@ -54,7 +54,7 @@ tl_exprs -> tl_expr nl tl_exprs : ['$1'|'$3'].
 tl_expr -> e_fn_tl: '$1'.
 tl_expr -> attr : '$1'.
 tl_expr -> e_def_tl: '$1'.
-tl_expr -> literal : '$1'.
+tl_expr -> expr : '$1'.
 
 e_fn_tl -> fn l_atom e_case end:
     Name = '$2',

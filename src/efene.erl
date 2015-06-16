@@ -16,6 +16,8 @@
 -export([run/0, run/1, compile/2, to_code/1,
          to_raw_lex/1, to_lex/1, to_ast/1, to_erl/1, to_erl_ast/1, to_mod/1, pprint/1]).
 
+-export([str_to_ast/1]).
+
 read_file(Path) ->
     case file:read_file(Path) of
         {ok, Content} -> {ok, unicode:characters_to_list(Content, utf8)};
@@ -101,7 +103,8 @@ str_to_lex(String) ->
             CleanTokens = clean_tokens(Tokens),
             {ok, CleanTokens, Endline};
         {eof, Endline} -> {error, {Endline, fn_lexer, {eof, Endline}}};
-        {error, Error} -> {error, Error}
+        {error, Error} -> {error, Error};
+        {error, Error, _} -> {error, Error}
     end.
 
 str_to_ast(Str) ->

@@ -13,7 +13,7 @@
 %% limitations under the License.
 
 -module(fn_to_erl).
--export([ast_to_ast/2, to_erl/2, add_error/4]).
+-export([ast_to_ast/2, to_erl/2, add_error/4, new_state/1]).
 
 -include("efene.hrl").
 
