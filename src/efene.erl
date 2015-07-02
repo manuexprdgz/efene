@@ -13,8 +13,9 @@
 %% limitations under the License.
 
 -module(efene).
--export([run/0, run/1, compile/2, to_code/1,
-         to_raw_lex/1, to_lex/1, to_ast/1, to_erl/1, to_erl_ast/1, to_mod/1, pprint/1]).
+-export([run/0, run/1, compile/2, compile/3, to_code/1, to_code/2,
+         to_raw_lex/1, to_lex/1, to_ast/1, to_erl/1, to_erl_ast/1, to_mod/1,
+         pprint/1]).
 
 -export([str_to_ast/1]).
 
@@ -71,9 +72,12 @@ to_erl(Path) ->
     end.
 
 to_code(Path) ->
+    to_code(Path).
+
+to_code(Path, Opts) ->
     case to_mod(Path) of
         {ok, Ast} ->
-            case compile:forms(Ast) of
+            case compile:forms(Ast, Opts) of
                 {ok, ModuleName, Code} -> {ok, ModuleName, Code, []};
                 {ok, _ModuleName, _Code, _Warnings}=Res -> Res;
                 Error -> Error
@@ -81,11 +85,11 @@ to_code(Path) ->
         Other -> Other
     end.
 
-compile(Path) ->
-    compile(Path, ".").
-
 compile(Path, DestPath) ->
-    case to_code(Path) of
+    compile(Path, DestPath, []).
+
+compile(Path, DestPath, Opts) ->
+    case to_code(Path, Opts) of
         {ok, _ModuleName, Code, Warnings} ->
             print(Warnings),
             BeamPath = filename:join(DestPath, get_module_beam_name(Path)),
@@ -150,7 +154,7 @@ run(["erl", File]) ->
 run(["erl2ast", File]) ->
     print(from_erl(File));
 run(["beam", File]) ->
-    print(compile(File));
+    print(compile(File, ".", [debug_info]));
 run(["pprint", File]) ->
     pprint(File);
 run(["testpp"]) ->
