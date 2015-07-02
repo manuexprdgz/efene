@@ -52,9 +52,9 @@ tl_exprs -> tl_expr : ['$1'].
 tl_exprs -> tl_expr nl tl_exprs : ['$1'|'$3'].
 
 tl_expr -> e_fn_tl: '$1'.
-tl_expr -> attr : '$1'.
+tl_expr -> attr: '$1'.
 tl_expr -> e_def_tl: '$1'.
-tl_expr -> expr : '$1'.
+tl_expr -> expr: '$1'.
 
 e_fn_tl -> fn l_atom e_case end:
     Name = '$2',
@@ -281,7 +281,8 @@ kv_match_items -> kv_match_item sep kv_match_items: ['$1'|'$3'].
 
 kv_match_item -> kv_key assign kv_val: {kvmatch, line('$1'), '$1', '$3'}.
 
-attrs -> attr nl : ['$1'].
+attrs -> attr : ['$1'].
+attrs -> attr attrs : ['$1'|'$2'].
 attrs -> attr nl attrs : ['$1'|'$3'].
 
 attr -> at path : make_attr(line('$1'), '$2', noparams, noresult).

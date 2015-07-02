@@ -209,8 +209,9 @@ clean_tokens([{'fn', _}=H1, {atom, _, _}=H2, {nl, _, _}|T], Accum) -> clean_toke
 
 clean_tokens([{'def', _}=H1, {atom, _, _}=H2, {nl, _, _}|T], Accum) -> clean_tokens([H1, H2|T], Accum);
 
-% remove newline before end
+% remove newline before end and @
 clean_tokens([{nl, _, _}, {'end', _, _}=H|T], Accum) -> clean_tokens([H|T], Accum);
+clean_tokens([{nl, _, _}, {'case', _}=H|T], Accum) -> clean_tokens([H|T], Accum);
 % remove newline before closing ] ) and }
 clean_tokens([{nl, _, _}, {close, _, _}=H|T], Accum) -> clean_tokens([H|T], Accum);
 clean_tokens([{nl, _, _}, {close_list, _, _}=H|T], Accum) -> clean_tokens([H|T], Accum);

@@ -266,6 +266,47 @@ fn identity @public
     X
 end
 
+fn test1 case: [] end
+fn test2 @public case: [] end
+fn test3 @public @doc("hi") case: [] end
+
+fn test4
+    case: []
+end
+
+fn test5 @public
+    case: []
+end
+
+fn test6 @public
+    @doc("hi")
+    case: []
+end
+
+fn test7
+    case: []
+end
+
+fn test8
+    @public
+    case: []
+end
+
+fn test9
+    @public
+    @doc("hi")
+    case: []
+end
+
+fn test10
+    case:
+        []
+end
+
+fn test11 case A: when A < 10: low else: hi end end
+fn test12 @public case A: when A < 10: low else: hi end end
+fn test13 @public @doc("hi") case A: when A < 10: low else: hi end end
+
 def resource:
     case post, "/foo/:bar", Req:
         ok
