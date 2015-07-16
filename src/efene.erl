@@ -15,7 +15,7 @@
 -module(efene).
 -export([run/0, run/1, compile/2, compile/3, to_code/1, to_code/2,
          to_raw_lex/1, to_lex/1, to_ast/1, to_erl/1, to_erl_ast/1, to_mod/1,
-         pprint/1, print_warnings/1]).
+         pprint/1, print_errors/2]).
 
 -export([str_to_ast/1]).
 
@@ -144,11 +144,6 @@ print(Data) ->
         _:_ -> io:format("~p~n", [Data])
     end.
 
-print_warnings([]) -> ok;
-print_warnings(Warnings) ->
-    io:format("Warnings: ~p~n", [Warnings]),
-    ok.
-
 % command line interface
 
 run() -> run([]).
@@ -171,7 +166,7 @@ run(["beam", File]) ->
     case compile(File, ".", [debug_info]) of
         {ok, CompileInfo} ->
             io:format("compile ok ~p~n", [CompileInfo]),
-            print_warnings(proplists:get_value(warnings, CompileInfo, []));
+            print_errors(proplists:get_value(warnings, CompileInfo, []), "warnings");
         {error, Errors, Warnings} ->
             print_errors(Errors, "errors"),
             print_errors(Warnings, "warnings"),
@@ -412,6 +407,7 @@ remove_emptish_fn_attrs([{attribute, _ALine, fn_attrs, {_FName, _FArity, [{[publ
 remove_emptish_fn_attrs([H|T], Accum) ->
     remove_emptish_fn_attrs(T, [H|Accum]).
 
+print_errors([], _Prefix) -> ok;
 print_errors(Errors, Prefix) ->
     lists:foreach(fun (Error) ->
                           Reason = fn_error:normalize(Error),
