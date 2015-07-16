@@ -15,7 +15,7 @@
 -module(efene).
 -export([run/0, run/1, compile/2, compile/3, to_code/1, to_code/2,
          to_raw_lex/1, to_lex/1, to_ast/1, to_erl/1, to_erl_ast/1, to_mod/1,
-         pprint/1]).
+         pprint/1, print_warnings/1]).
 
 -export([str_to_ast/1]).
 
@@ -81,7 +81,8 @@ to_code(Path, Opts) ->
             case compile:forms(Ast, Opts) of
                 {ok, ModuleName, Code} -> {ok, ModuleName, Code, []};
                 {ok, _ModuleName, _Code, _Warnings}=Res -> Res;
-                Error -> Error
+                error -> {error, compile_forms_error};
+                {error, _Errors, _Warnings}=Error -> Error
             end;
         Other -> Other
     end.
@@ -91,10 +92,12 @@ compile(Path, DestPath) ->
 
 compile(Path, DestPath, Opts) ->
     case to_code(Path, Opts) of
-        {ok, _ModuleName, Code, Warnings} ->
-            print(Warnings),
+        {ok, ModuleName, Code, Warnings} ->
             BeamPath = filename:join(DestPath, get_module_beam_name(Path)),
-            bin_to_file(Code, BeamPath);
+            case bin_to_file(Code, BeamPath) of
+                error -> {error, {file_write_error, BeamPath}};
+                ok -> {ok, [{warnings, Warnings}, {module_name, ModuleName}]}
+            end;
         Other -> Other
     end.
 
@@ -136,6 +139,11 @@ print(Data) ->
         _:_ -> io:format("~p~n", [Data])
     end.
 
+print_warnings([]) -> ok;
+print_warnings(Warnings) ->
+    io:format("Warnings: ~p~n", [Warnings]),
+    ok.
+
 % command line interface
 
 run() -> run([]).
@@ -155,7 +163,13 @@ run(["erl", File]) ->
 run(["erl2ast", File]) ->
     print(from_erl(File));
 run(["beam", File]) ->
-    print(compile(File, ".", [debug_info]));
+    case compile(File, ".", [debug_info]) of
+        {ok, CompileInfo} ->
+            io:format("compile ok ~p~n", [CompileInfo]),
+            print_warnings(proplists:get_value(warnings, CompileInfo, []));
+        Other ->
+            print(Other)
+    end;
 run(["pprint", File]) ->
     pprint(File);
 run(["testpp"]) ->
