@@ -78,11 +78,16 @@ to_code(Path) ->
 to_code(Path, Opts) ->
     case to_mod(Path) of
         {ok, Ast} ->
-            case compile:forms(Ast, Opts) of
-                {ok, ModuleName, Code} -> {ok, ModuleName, Code, []};
-                {ok, _ModuleName, _Code, _Warnings}=Res -> Res;
-                error -> {error, compile_forms_error};
-                {error, _Errors, _Warnings}=Error -> Error
+            case compile:forms(Ast, [return, strong_validation|Opts]) of
+                {error, _Errors, _Warnings}=Error -> Error;
+                error -> {error, [{error, compile_forms_error}], []};
+                _ ->
+                    case compile:forms(Ast, Opts) of
+                        {ok, ModuleName, Code} -> {ok, ModuleName, Code, []};
+                        {ok, _ModuleName, _Code, _Warnings}=Res -> Res;
+                        error -> {error, [{error, compile_forms_error}], []};
+                        {error, _Errors, _Warnings}=Error -> Error
+                    end
             end;
         Other -> Other
     end.
@@ -95,7 +100,7 @@ compile(Path, DestPath, Opts) ->
         {ok, ModuleName, Code, Warnings} ->
             BeamPath = filename:join(DestPath, get_module_beam_name(Path)),
             case bin_to_file(Code, BeamPath) of
-                error -> {error, {file_write_error, BeamPath}};
+                error -> {error, [{file_write_error, BeamPath}], []};
                 ok -> {ok, [{warnings, Warnings}, {module_name, ModuleName}]}
             end;
         Other -> Other
@@ -167,6 +172,10 @@ run(["beam", File]) ->
         {ok, CompileInfo} ->
             io:format("compile ok ~p~n", [CompileInfo]),
             print_warnings(proplists:get_value(warnings, CompileInfo, []));
+        {error, Errors, Warnings} ->
+            print_errors(Errors, "errors"),
+            print_errors(Warnings, "warnings"),
+            ok;
         Other ->
             print(Other)
     end;
@@ -403,3 +412,8 @@ remove_emptish_fn_attrs([{attribute, _ALine, fn_attrs, {_FName, _FArity, [{[publ
 remove_emptish_fn_attrs([H|T], Accum) ->
     remove_emptish_fn_attrs(T, [H|Accum]).
 
+print_errors(Errors, Prefix) ->
+    lists:foreach(fun (Error) ->
+                          Reason = fn_error:normalize(Error),
+                          io:format("~s:~n~s~n", [Prefix, Reason])
+                  end, Errors).
