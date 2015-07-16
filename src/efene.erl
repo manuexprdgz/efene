@@ -48,11 +48,12 @@ to_mod(Path) ->
                             FnAttrs = fn_util:get_fn_attribute(State),
                             ModAttr = {attribute, 1, module, ModAtomName},
                             FileAttr = {attribute, 1, file, {Path, 1}},
+                            FilteredFnAttrs = remove_emptish_fn_attrs(FnAttrs, []),
                             case ExportAttr of
                                 {attribute, _ExportLine, export, []} ->
-                                    {ok, [FileAttr, ModAttr|(FnAttrs ++ Ast)]};
+                                    {ok, [FileAttr, ModAttr|(FilteredFnAttrs ++ Ast)]};
                                 _ ->
-                                    {ok, [FileAttr, ModAttr, ExportAttr|(FnAttrs ++ Ast)]}
+                                    {ok, [FileAttr, ModAttr, ExportAttr|(FilteredFnAttrs ++ Ast)]}
                             end
                     end,
             format_errors_or(ModAtomName, State, ToMod);
@@ -377,3 +378,14 @@ test_pp() ->
     pp("(for A in B: B + 1\nend)"),
     pp("(for A in B; A < 10: B + 1\nend)"),
     ok.
+
+% remove fn attributes that only contain the public or no attributes
+remove_emptish_fn_attrs([], Accum) ->
+    lists:reverse(Accum);
+remove_emptish_fn_attrs([{attribute, _ALine, fn_attrs, {_FName, _FArity, []}}|T], Accum) ->
+    remove_emptish_fn_attrs(T, Accum);
+remove_emptish_fn_attrs([{attribute, _ALine, fn_attrs, {_FName, _FArity, [{[public], {[], []}}]}}|T], Accum) ->
+    remove_emptish_fn_attrs(T, Accum);
+remove_emptish_fn_attrs([H|T], Accum) ->
+    remove_emptish_fn_attrs(T, [H|Accum]).
+
