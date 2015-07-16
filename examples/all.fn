@@ -307,6 +307,41 @@ fn test11 case A: when A < 10: low else: hi end end
 fn test12 @public case A: when A < 10: low else: hi end end
 fn test13 @public @doc("hi") case A: when A < 10: low else: hi end end
 
+fn test14 @public
+    case A
+           when A is a,
+                A is b,
+                A is c:
+        A
+end
+
+fn test15 @public
+    case A when A is a,
+                A is b,
+                A is c:
+        A
+end
+
+fn test16 @public
+    case A when A is a, A is b,
+                A is c:
+        A
+end
+
+fn test17 @public
+    case A when A is a, A is b, A is c:
+        A
+end
+
+fn test18 @public
+    case A when A is a, A is b, A is c: A
+end
+
+fn test19 @public case A when A is a, A is b, A is c: A
+end
+
+fn test20 @public case A when A is a, A is b, A is c: A end
+
 def resource:
     case post, "/foo/:bar", Req:
         ok
