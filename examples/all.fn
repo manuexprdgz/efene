@@ -1,5 +1,7 @@
 @export(types/1)
 @export_type(post/0, option/1)
+@import(erlang, [phash2/1, external_size/2])
+@on_load(load/0)
 
 @type(gender) -> male or female or other
 @type(age) -> range(0, 150)
@@ -10,6 +12,8 @@
 @record(state) -> (counter = 0, last_modification)
 
 @opaque(state) -> #r state
+
+fn load case: io.format("loaded~n") end
 
 fn types @public
   @doc("function that explored efene types")
