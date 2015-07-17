@@ -1,4 +1,7 @@
 
+@on_load(inexistent/1)
+@on_load(inexistent/0)
+
 @record(rec1) -> (a,)
 @record(rec1) -> (a, b)
 

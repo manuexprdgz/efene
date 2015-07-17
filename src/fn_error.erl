@@ -72,7 +72,7 @@ normalize_erl_lint({attribute, Attr}) ->
 normalize_erl_lint({bad_export_type, ETs}) ->
     io_lib:format("bad export type: ~p", [ETs]);
 normalize_erl_lint({bad_on_load_arity, Fa}) ->
-    io_lib:format("bad on load arity: ~p", [Fa]);
+    io_lib:format("bad on load arity: ~s", [format_mfa_or_na(Fa)]);
 normalize_erl_lint({bad_on_load, Val}) ->
     io_lib:format("bad on load: ~p", [Val]);
 normalize_erl_lint({behaviour_info, Fa}) ->
