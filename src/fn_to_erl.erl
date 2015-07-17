@@ -35,6 +35,10 @@ ast_to_ast({attr, Line, [?Atom(export=Name)], Params, noresult}, #{level := 0}=S
 %-export_type([...]).
 ast_to_ast({attr, Line, [?Atom(export_type=Name)], Params, noresult}, #{level := 0}=State) ->
     export_like_to_ast(Name, Line, Params, State);
+%-on_load(fname/<arity>).
+ast_to_ast({attr, Line, [?Atom(on_load=Name)], [?O(_Line, '/', ?Atom(FunName), ?V(_ArLine, integer, Arity))], noresult}, #{level := 0}=State) ->
+    R = {attribute, Line, Name, {FunName, Arity}},
+    {R, State};
 
 ast_to_ast({attr, Line, [?Atom(AttrName)], [?Atom(BName)], noresult}, #{level := 0}=State) 
         when AttrName == behavior orelse AttrName == behaviour ->
