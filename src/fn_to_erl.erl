@@ -141,12 +141,12 @@ ast_to_ast(?S(Line, list, Val), State) ->
 ast_to_ast(?S(Line, map=Type, {Var, KVs}), State) ->
     {EVar, State1} = ast_to_ast(Var, State),
     {Items, State2} = state_map(fun to_map_field/2, KVs, State1),
-    R = {Type, Line, EVar, lists:reverse(Items)},
+    R = {Type, Line, EVar, Items},
     {R, State2};
 % <map>
 ast_to_ast(?S(Line, map=Type, KVs), State) ->
     {Items, State1} = state_map(fun to_map_field/2, KVs, State),
-    R = {Type, Line, lists:reverse(Items)},
+    R = {Type, Line, Items},
     {R, State1};
 
 % #i <atom>
@@ -252,7 +252,7 @@ ast_to_ast(?E(Line, 'try', {Body, Catch, After}), State) ->
                            noafter -> {[], State2};
                            AfterBody -> ast_to_ast(AfterBody, State2)
                        end,
-    R = {'try', Line, EBody, [], lists:reverse(ECatch), EAfter},
+    R = {'try', Line, EBody, [], ECatch, EAfter},
     {R, State3};
 
 % receive without case clauses
@@ -451,8 +451,7 @@ cmatch_to_catch(Line, Class, Match, When, Body, State) ->
 
 when_to_ast(nowhen, State) -> {[], State};
 when_to_ast(When, State) when is_list(When) ->
-    {R, State1} = state_map(fun when_to_ast/2, When, State),
-    {lists:reverse(R), State1};
+    state_map(fun when_to_ast/2, When, State);
 when_to_ast(When, State) ->
     ast_to_ast(When, State).
 
@@ -532,10 +531,11 @@ expand_case_else_match([H|T], Arity, Accum) ->
     expand_case_else_match(T, Arity, [H|Accum]).
 
 state_map(Fun, Seq, State) ->
-    lists:foldl(fun (Item, {Accum, StateIn}) ->
+    {R, FState} = lists:foldl(fun (Item, {Accum, StateIn}) ->
                        {R, State1} = Fun(Item, StateIn),
                        {[R|Accum], State1}
-               end,  {[], State}, Seq).
+               end,  {[], State}, Seq),
+    {lists:reverse(R), FState}.
 
 add_attributes(#{attrs := AttrList}=State, Type, Line, Name, Attrs) ->
     NewAttrList = [{Type, Line, Name, Attrs}|AttrList],
@@ -564,7 +564,7 @@ lc_to_ast(Line, Qualifiers, Body, State) ->
                               {Ri, S1}
                       end,
     {Items, State2} = state_map(fun for_qualifier_to_ast/2, Qualifiers, State1),
-    {lists:reverse(Items), EBody, State2}.
+    {Items, EBody, State2}.
 
 info_to_ast(Line, line, State) ->
     {{integer, Line, Line}, State};
