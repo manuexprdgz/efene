@@ -46,6 +46,11 @@ ast_to_ast({attr, Line, [?Atom(import=Name)],
     {EFuns, State1} = state_map(fun ast_to_export_fun/2, FunNamesAndArities, State),
     R = {attribute, Line, Name, {ModuleName, EFuns}},
     {R, State1};
+%-vsn(<literal_term>).
+ast_to_ast({attr, Line, [?Atom(vsn=Name)], [Vsn], noresult}, #{level := 0}=State) ->
+    {EVsn, State1} = ast_to_ast(Vsn, State#{level => 1}),
+    R = {attribute, Line, Name, erl_syntax:concrete(EVsn)},
+    {R, State1#{level => 0}};
 
 ast_to_ast({attr, Line, [?Atom(AttrName)], [?Atom(BName)], noresult}, #{level := 0}=State) 
         when AttrName == behavior orelse AttrName == behaviour ->

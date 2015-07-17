@@ -2,6 +2,8 @@
 @export_type(post/0, option/1)
 @import(erlang, [phash2/1, external_size/2])
 @on_load(load/0)
+@vsn((1, 2, 3))
+@vsn("1.2.3")
 
 @type(gender) -> male or female or other
 @type(age) -> range(0, 150)
