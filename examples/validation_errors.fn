@@ -19,6 +19,7 @@ fn revoke_bucket @public
     length([])
     M1 = {(1 + 2): 3}
     _M2 = {M1: 3}
+    _M3 = {a = 2}
 
     R = #r.person {name: 'bob'}
     R1 = #r.rec1 {A: 2}
