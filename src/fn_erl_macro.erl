@@ -49,6 +49,15 @@ expand_macros(Macros, [{macro, {var, _, MacroName}}|T], Args, Accum, Refs) ->
         {error, _Reason} = Error -> Error
     end;
 
+expand_macros(Macros, [{macro_string, {var, MacroInfo, VarName}}|T], Args, Accum, Refs) ->
+    case maps:get(VarName, Args, undefined) of
+        undefined -> {error, {var_not_defined, VarName}};
+        Value ->
+            Line = proplists:get_value(line, MacroInfo, 1),
+            Str = erl_pp:expr(Value),
+            StrAst = {string, [{line, Line}], Str},
+            expand_macros(Macros, T, Args, [StrAst|Accum], Refs)
+    end;
 %expand_macros(Macros, [{macro, {var, _, MacroName}, MacroArgs}|T], Args, Accum, Refs) ->
 
 expand_macros(Macros, [H|T], Args, Accum, Refs) ->

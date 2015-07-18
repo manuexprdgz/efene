@@ -1,7 +1,7 @@
 -module(fn_SUITE).
 -compile(export_all).
 
-all() -> [eval_macro, can_expand_var_with_ref].
+all() -> [eval_macro, can_expand_var_with_ref, can_expand_macro_str].
 
 init_per_suite(Config) ->
     Config.
@@ -38,3 +38,10 @@ can_expand_var_with_ref(_) ->
     {ok, [{op, _, '+', {var, 2, Ref}, {integer, _, 1}}]} = exp(Macros, {'Inc', 1}, #{'A' => {var, 2, Ref}}),
     AstNode = {op, 1, '-', {integer, 1, 42}, {integer, 1, 43}},
     {ok, [{op, _, '+', AstNode, {integer, _, 1}}]} = exp(Macros, {'Inc', 1}, #{'A' => AstNode}).
+
+can_expand_macro_str(_) ->
+    {ok, Macros} = fn_erl_macro:macro_defs("../../examples/ms.hrl"),
+    AstNode = {op, 1, '-', {integer, 1, 42}, {integer, 1, 43}},
+    {ok, [{string, _, Str}]} = exp(Macros, {'Text', 1}, #{'Val' => AstNode}),
+    "42 - 43" = lists:flatten(Str).
+
