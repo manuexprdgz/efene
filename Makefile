@@ -1,4 +1,6 @@
 PROJECT = efene
+DEPS = aleppo
+dep_aleppo = git https://github.com/marianoguerra/aleppo expose-macro-info
 include erlang.mk
 
 fnshell:
