@@ -54,7 +54,7 @@ expand_macros(Macros, [{macro_string, {var, MacroInfo, VarName}}|T], Args, Accum
         undefined -> {error, {var_not_defined, VarName}};
         Value ->
             Line = proplists:get_value(line, MacroInfo, 1),
-            Str = erl_pp:expr(Value),
+            Str = lists:flatten(erl_pp:expr(Value)),
             StrAst = {string, [{line, Line}], Str},
             expand_macros(Macros, T, Args, [StrAst|Accum], Refs)
     end;

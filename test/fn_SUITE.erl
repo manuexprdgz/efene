@@ -42,6 +42,10 @@ can_expand_var_with_ref(_) ->
 can_expand_macro_str(_) ->
     {ok, Macros} = fn_erl_macro:macro_defs("../../examples/ms.hrl"),
     AstNode = {op, 1, '-', {integer, 1, 42}, {integer, 1, 43}},
-    {ok, [{string, _, Str}]} = exp(Macros, {'Text', 1}, #{'Val' => AstNode}),
-    "42 - 43" = lists:flatten(Str).
+    {ok, [{string, _, "42 - 43"}]} = exp(Macros, {'Text', 1}, #{'Val' => AstNode}),
+
+    {ok, [Ast]} = exp(Macros, {'TESTCALL', 1}, #{'Call' => AstNode}),
+    "io:format(\"Call ~s: ~w~n\", [\"42 - 43\",42 - 43])" = lists:flatten(erl_pp:expr(Ast)).
+
+
 
