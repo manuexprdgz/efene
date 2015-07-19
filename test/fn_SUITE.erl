@@ -6,7 +6,7 @@ all() -> [eval_macro, can_expand_var_with_ref, can_expand_macro_str,
           can_expand_inner_macro_call_in_expr].
 
 init_per_suite(Config) ->
-    {ok, Macros} = fn_erl_macro:macro_defs("../../examples/ms.hrl"),
+    {ok, _Ast, Macros} = fn_erl_macro:parse_to_include("../../examples/ms.hrl"),
     [{macros, Macros}|Config].
 
 macros(Config) ->

@@ -51,6 +51,20 @@ ast_to_ast({attr, Line, [?Atom(vsn=Name)], [Vsn], noresult}, #{level := 0}=State
     {EVsn, State1} = ast_to_ast(Vsn, State#{level => 1}),
     R = {attribute, Line, Name, erl_syntax:concrete(EVsn)},
     {R, State1#{level => 0}};
+%-include(Path).
+ast_to_ast({attr, Line, [?Atom(include)], [?V(_, string, Path)], noresult},
+           #{level := 0, module := Module}=State) ->
+    case fn_erl_macro:parse_to_include(Path) of
+        % TODO: merge macros
+        {ok, Ast, _Macros} ->
+            % TODO: get the actual path
+            ModulePath = atom_to_list(Module) ++ ".fn",
+            {[{attribute, Line, file, {ModulePath, Line}}|lists:reverse(Ast)], State};
+        {error, Reason} ->
+            State1 = add_error(State, error_parsing_include_file, Line, {Path, Reason}),
+            R = {atom, Line, error},
+            {R, State1}
+    end;
 
 ast_to_ast({attr, Line, [?Atom(AttrName)], [?Atom(BName)], noresult}, #{level := 0}=State) 
         when AttrName == behavior orelse AttrName == behaviour ->

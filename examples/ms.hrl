@@ -13,3 +13,5 @@
 -define(Inc(A), A + 1).
 -define(IncConst(A), A + ?Const).
 -define(TESTCALL(Call), io:format("Call ~s: ~w~n", [??Call, Call])).
+
+what_am_i() -> a_function_in_the_macro_file.

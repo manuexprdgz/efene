@@ -1,9 +1,14 @@
 -module(fn_erl_macro).
--export([macro_defs/1, expand_macro/2, expand_macro/3]).
+-export([macro_defs/1, expand_macro/2, expand_macro/3, parse_to_include/1]).
 
 macro_defs(Path) ->
     {ok, _Tokens, Macros} = aleppo:process_file(Path, [{return_macros, true}]),
     {ok, Macros}.
+
+parse_to_include(Path) ->
+    {ok, _Tokens, Macros} = aleppo:process_file(Path, [{return_macros, true}]),
+    {ok, Ast} = epp:parse_file(Path, []),
+    {ok, remove_eof(Ast, []), Macros}.
 
 expand_macro(Macros, Name) ->
     expand_macro(Macros, Name, #{}).
