@@ -1,7 +1,8 @@
 -module(fn_SUITE).
 -compile(export_all).
 
-all() -> [eval_macro, can_expand_var_with_ref, can_expand_macro_str].
+all() -> [eval_macro, can_expand_var_with_ref, can_expand_macro_str,
+          can_expand_simple_inner_macro_call, can_expand_macro_lex_str].
 
 init_per_suite(Config) ->
     Config.
@@ -16,7 +17,7 @@ eval_macro(_) ->
     {ok, Macros} = fn_erl_macro:macro_defs("../../examples/ms.hrl"),
     print(dict:to_list(Macros)),
     {ok, [{string, _, "bob"}]} = exp(Macros, 'AUTHOR', #{}),
-    {ok, [{op, _, '*', {integer, _, 2}, {integer, _, 3}}]} = exp(Macros, 'Const', {}),
+    {ok, [{op, _, '*', {integer, _, 2}, {integer, _, 3}}]} = exp(Macros, 'Const', #{}),
 
     {ok, [{op, _, '+', {integer, _, 2}, {integer, _, 1}}]} = exp(Macros, {'Inc', 1}, #{'A' => {integer, 1, 2}}),
 
@@ -47,5 +48,19 @@ can_expand_macro_str(_) ->
     {ok, [Ast]} = exp(Macros, {'TESTCALL', 1}, #{'Call' => AstNode}),
     "io:format(\"Call ~s: ~w~n\", [\"42 - 43\",42 - 43])" = lists:flatten(erl_pp:expr(Ast)).
 
+can_expand_macro_lex_str(_) ->
+    {ok, Macros} = fn_erl_macro:macro_defs("../../examples/ms.hrl"),
+    AstNode = {string, 1, "foo"},
+    {ok, [Ast]} = exp(Macros, {'NestedText', 1}, #{'A' => AstNode}),
+    "\"foo\" ++ \"1 - 2\"" = lists:flatten(erl_pp:expr(Ast)).
+
+can_expand_simple_inner_macro_call(_) ->
+    {ok, Macros} = fn_erl_macro:macro_defs("../../examples/ms.hrl"),
+    AstNode = {op, 1, '-', {integer, 1, 42}, {integer, 1, 43}},
+    {ok, [Ast]} = exp(Macros, {'Int', 1}, #{'Val' => AstNode}),
+    "{val,_,integer,42 - 43}" = lists:flatten(erl_pp:expr(Ast)),
+
+    {ok, [Ast1]} = exp(Macros, {'Int', 2}, #{'Line' => AstNode, 'Val' => {integer, 1, 12}}),
+    "{val,42 - 43,integer,12}" = lists:flatten(erl_pp:expr(Ast1)).
 
 
