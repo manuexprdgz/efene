@@ -2,4 +2,6 @@
 
 fn main @public case:
     a_function_in_the_macro_file = what_am_i()
+    "bob" = #m AUTHOR
+    2 * 3 = #m Const
 end

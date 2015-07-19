@@ -21,8 +21,7 @@ new_state(Module) -> #{module => Module,
                        errors => [],
                        warnings => [],
                        attrs => [],
-                       macro_funs => #{},
-                       macro_vals => #{},
+                       macros => dict:new(),
                        level => 0}.
 
 to_erl(Ast, Module) -> ast_to_ast(Ast, new_state(Module)).
@@ -53,13 +52,16 @@ ast_to_ast({attr, Line, [?Atom(vsn=Name)], [Vsn], noresult}, #{level := 0}=State
     {R, State1#{level => 0}};
 %-include(Path).
 ast_to_ast({attr, Line, [?Atom(include)], [?V(_, string, Path)], noresult},
-           #{level := 0, module := Module}=State) ->
+           #{level := 0, module := Module, macros := Macros}=State) ->
     case fn_erl_macro:parse_to_include(Path) of
-        % TODO: merge macros
-        {ok, Ast, _Macros} ->
+        {ok, Ast, FileMacros} ->
+            % TODO: warn about overriding macros
+            NewMacros = dict:merge(fun(_Key, _Value1, Value2) -> Value2 end,
+                                   Macros, FileMacros),
             % TODO: get the actual path
             ModulePath = atom_to_list(Module) ++ ".fn",
-            {[{attribute, Line, file, {ModulePath, Line}}|lists:reverse(Ast)], State};
+            {[{attribute, Line, file, {ModulePath, Line}}|lists:reverse(Ast)],
+             State#{macros => NewMacros}};
         {error, Reason} ->
             State1 = add_error(State, error_parsing_include_file, Line, {Path, Reason}),
             R = {atom, Line, error},
@@ -205,6 +207,15 @@ ast_to_ast(?LTag(Line, [?Atom(c)], ?V(_StrLine, string, [Char])), State) ->
 % #atom <string>
 ast_to_ast(?LTag(Line, [?Atom(atom)], ?V(_StrLine, string, AtomStr)), State) ->
     {{atom, Line, list_to_atom(AtomStr)}, State};
+% #m <var>
+ast_to_ast(?LTag(Line, [?Atom(m)], ?Var(Key)), #{macros := Macros}=State) ->
+    case fn_erl_macro:expand_macro(Macros, Key, #{}) of
+        {ok, [Ast]} ->
+            {Ast, State};
+        {error, Reason} ->
+            State1 = add_error(State, macro_error, Line, Reason),
+            {{atom, Line, error}, State1}
+    end;
 % tuple
 ast_to_ast(?S(Line, tuple=Type, Val), State)   ->
     {EVal, State1} = ast_to_ast(Val, State),
