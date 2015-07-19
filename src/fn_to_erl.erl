@@ -208,14 +208,12 @@ ast_to_ast(?LTag(Line, [?Atom(c)], ?V(_StrLine, string, [Char])), State) ->
 ast_to_ast(?LTag(Line, [?Atom(atom)], ?V(_StrLine, string, AtomStr)), State) ->
     {{atom, Line, list_to_atom(AtomStr)}, State};
 % #m <var>
-ast_to_ast(?LTag(Line, [?Atom(m)], ?Var(Key)), #{macros := Macros}=State) ->
-    case fn_erl_macro:expand_macro(Macros, Key, #{}) of
-        {ok, [Ast]} ->
-            {Ast, State};
-        {error, Reason} ->
-            State1 = add_error(State, macro_error, Line, Reason),
-            {{atom, Line, error}, State1}
-    end;
+ast_to_ast(?LTag(Line, [?Atom(m)], ?Var(MacroName)), State) ->
+    expand_macro(Line, State, MacroName, []);
+% #m <var>(args..)
+ast_to_ast(?LTag(Line, [?Atom(m)], ?E(Line, call, {[?Var(MacroName)], Args})), State) ->
+    expand_macro(Line, State, MacroName, Args);
+
 % tuple
 ast_to_ast(?S(Line, tuple=Type, Val), State)   ->
     {EVal, State1} = ast_to_ast(Val, State),
@@ -776,3 +774,12 @@ maybe_type_record(R, Line, RecordName, Types, State) ->
     {RType, State1} = fn_spec:parse_record_types(RecordName, Line, Types, State),
     {[RType, R], State1}.
 
+expand_macro(Line, #{macros := Macros}=State, MacroName, Args) ->
+    {EArgs, State1} = ast_to_ast(Args, State),
+    case fn_erl_macro:call_macro(Macros, MacroName, EArgs) of
+        {ok, [Ast]} ->
+            {Ast, State1};
+        {error, Reason} ->
+            State2 = add_error(State1, macro_error, Line, Reason),
+            {{atom, Line, error}, State2}
+    end.

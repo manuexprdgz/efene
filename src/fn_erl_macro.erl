@@ -1,5 +1,6 @@
 -module(fn_erl_macro).
--export([macro_defs/1, expand_macro/2, expand_macro/3, parse_to_include/1]).
+-export([macro_defs/1, expand_macro/2, expand_macro/3, parse_to_include/1,
+        call_macro/3]).
 
 macro_defs(Path) ->
     {ok, _Tokens, Macros} = aleppo:process_file(Path, [{return_macros, true}]),
@@ -24,6 +25,21 @@ get_macro(Macros, Name) ->
         error -> {error, {macro_not_found, Name}}
     end.
 
+call_macro(Macros, MacroName, []) ->
+    expand_macro(Macros, MacroName, #{});
+call_macro(Macros, MacroName, Args) ->
+    MacroArity = length(Args),
+    MacroKey = {MacroName, MacroArity},
+    case get_macro(Macros, MacroKey) of
+        {ok, MacroArgVarNames, _Tokens} ->
+            MacroArgNames = unwrap_macro_arg_var_names(MacroArgVarNames),
+            WrappedArgs = [{ast, Arg} || Arg <- Args],
+            CallArgsList = lists:zip(MacroArgNames, WrappedArgs),
+            CallArgs = maps:from_list(CallArgsList),
+            expand_macro(Macros, MacroKey, CallArgs);
+        {error, _Reason} = Error -> Error
+    end.
+
 expand_macro(Macros, Name, Args) ->
     case get_macro(Macros, Name) of
         {ok, _MacroArgs, Tokens} ->
@@ -41,7 +57,8 @@ expand_macros(_Macros, [], _Args, Accum, Refs) ->
     {ok, lists:reverse(Accum), Refs};
 expand_macros(Macros, [{var, _, VarName}=VarAst|T], Args, Accum, Refs) ->
     case maps:get(VarName, Args, undefined) of
-        undefined -> VarAst;
+        undefined ->
+            expand_macros(Macros, T, Args, [VarAst|Accum], Refs);
         % when called from outside vars are ast trees, so we need to put
         % a reference disguised as a var so it compiles from tokens to ast
         % after this processing and then we look for the fake vars with refs
