@@ -14,7 +14,9 @@
 -define(LTag(Line, Path, Val), {ltag, Line, Path, Val}).
 
 -define(Atom(Val), ?V(_, atom, Val)).
+-define(Atom(Line, Val), ?V(Line, atom, Val)).
 -define(Var(Val), ?V(_, var, Val)).
+-define(Var(Line, Val), ?V(Line, var, Val)).
 -define(Int(Val), ?V(_, integer, Val)).
 -define(Int(Line, Val), ?V(Line, integer, Val)).
 

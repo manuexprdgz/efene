@@ -347,36 +347,3 @@ fn test19 @public case A when A is a, A is b, A is c: A
 end
 
 fn test20 @public case A when A is a, A is b, A is c: A end
-
-def resource:
-    case post, "/foo/:bar", Req:
-        ok
-end
-
-def resource:
-    @name(bar)
-    case post, "/foo/:bar", Req:
-        ok
-end
-
-def resource foo:
-    case post, "/foo/:bar", Req:
-        ok
-end
-
-def resource foo:
-    @name(bar)
-    case post, "/foo/:bar", Req:
-        ok
-end
-
-def resource foo, "bar":
-    case post, "/foo/:bar", Req:
-        ok
-end
-
-def resource foo, "bar":
-    @name(bar)
-    case post, "/foo/:bar", Req:
-        ok
-end

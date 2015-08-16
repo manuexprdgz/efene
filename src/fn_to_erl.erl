@@ -13,7 +13,8 @@
 %% limitations under the License.
 
 -module(fn_to_erl).
--export([ast_to_ast/2, to_erl/2, add_error/4, new_state/1]).
+-export([ast_to_ast/2, to_erl/2, add_error/4, new_state/1, expected_got/2,
+        lc_to_ast/4]).
 
 -include("efene.hrl").
 
@@ -21,6 +22,7 @@ new_state(Module) -> #{module => Module,
                        errors => [],
                        warnings => [],
                        attrs => [],
+                       extensions => fn_exts:get_extensions(),
                        macros => dict:new(),
                        level => 0}.
 
@@ -122,15 +124,34 @@ ast_to_ast({attr, _Line, [?Atom(Type)], _Params, _Result}=Ast, #{level := 0}=Sta
   when Type == type orelse Type == opaque ->
     fn_spec:type_to_spec(Ast, State);
 
-% ^_ <expr>
-ast_to_ast(?T(_Line, [?Var('_')], _), State) ->
-    R = 'fn compiler ignore',
-    {R, State};
+% ^<path> <expr>
+ast_to_ast(?T(Line, Path, Ast), State) ->
+    handle_tag(Line, "expr_", Path, Ast, State);
 
-% #_ <val>
-ast_to_ast(?LTag(_Line, [?Var('_')], _), State) ->
-    R = 'fn compiler ignore',
+% #r.<atom> <atom>
+ast_to_ast(?LTag(Line, [?Atom(r), ?Atom(RecordName)], ?Atom(Field)), State) ->
+    R = {record_index, Line, RecordName, {atom, Line, Field}},
     {R, State};
+% #r.<atom>.<atom> <var>
+ast_to_ast(?LTag(Line, [?Atom(r), ?Atom(RecordName), ?Atom(Field)], ?Var(RecordVar)), State) ->
+    R = {record_field, Line, {var, Line, RecordVar}, RecordName, {atom, Line, Field}},
+    {R, State};
+% #r.<atom> <var>#<map>
+ast_to_ast(?LTag(Line, [?Atom(r), ?Atom(RecordName)],
+              ?S(_MapLine, map, {Var, KVs})), State) ->
+    {EVar, State1} = ast_to_ast(Var, State),
+    {Items, State2} = state_map(fun to_record_field/2, KVs, State1),
+    R = {record, Line, EVar, RecordName, Items},
+    {R, State2};
+% #r.<atom> <map>
+ast_to_ast(?LTag(Line, [?Atom(r), ?Atom(RecordName)], ?S(_MapLine, map, KVs)), State) ->
+    {Items, State1} = state_map(fun to_record_field/2, KVs, State),
+    R = {record, Line, RecordName, Items},
+    {R, State1};
+
+% #<path> <val>
+ast_to_ast(?LTag(Line, Path, Ast), State) ->
+    handle_tag(Line, "val_", Path, Ast, State);
 
 ast_to_ast(Ast, #{level := 0}=State) ->
     Line = element(2, Ast),
@@ -161,10 +182,6 @@ ast_to_ast(?E(_Line, call_thread, {InitialVal, Calls}), State) ->
                 end, InitialVal, Calls),
     ast_to_ast(Threaded, State);
 
-% binary list
-ast_to_ast(?LTag(Line, [?Atom(b)], ?S(_LLine, list, TSList)), State) ->
-    type_specifiers_to_ast(Line, TSList, State);
-
 % list
 ast_to_ast(?S(Line, list, Val), State) ->
     list_to_cons_list(Line, Val, State);
@@ -180,43 +197,6 @@ ast_to_ast(?S(Line, map=Type, KVs), State) ->
     {Items, State1} = state_map(fun to_map_field/2, KVs, State),
     R = {Type, Line, Items},
     {R, State1};
-
-% #i <atom>
-ast_to_ast(?LTag(Line, [?Atom(i)], ?Atom(Name)), State) ->
-    info_to_ast(Line, Name, State);
-% #r.<atom> <atom>
-ast_to_ast(?LTag(Line, [?Atom(r), ?Atom(RecordName)], ?Atom(Field)), State) ->
-    R = {record_index, Line, RecordName, {atom, Line, Field}},
-    {R, State};
-% #r.<atom>.<atom> <var>
-ast_to_ast(?LTag(Line, [?Atom(r), ?Atom(RecordName), ?Atom(Field)], ?Var(RecordVar)), State) ->
-    R = {record_field, Line, {var, Line, RecordVar}, RecordName, {atom, Line, Field}},
-    {R, State};
-% #r.<atom> <var>#<map>
-ast_to_ast(?LTag(Line, [?Atom(r), ?Atom(RecordName)],
-              ?S(_MapLine, map, {Var, KVs})), State) ->
-    {EVar, State1} = ast_to_ast(Var, State),
-    {Items, State2} = state_map(fun to_record_field/2, KVs, State1),
-    R = {record, Line, EVar, RecordName, Items},
-    {R, State2};
-% #r.<atom> <map>
-ast_to_ast(?LTag(Line, [?Atom(r), ?Atom(RecordName)], ?S(_MapLine, map, KVs)), State) ->
-    {Items, State1} = state_map(fun to_record_field/2, KVs, State),
-    R = {record, Line, RecordName, Items},
-    {R, State1};
-
-% #c <string>
-ast_to_ast(?LTag(Line, [?Atom(c)], ?V(_StrLine, string, [Char])), State) ->
-    {{char, Line, Char}, State};
-% #atom <string>
-ast_to_ast(?LTag(Line, [?Atom(atom)], ?V(_StrLine, string, AtomStr)), State) ->
-    {{atom, Line, list_to_atom(AtomStr)}, State};
-% #m <var>
-ast_to_ast(?LTag(Line, [?Atom(m)], ?Var(MacroName)), State) ->
-    expand_macro(Line, State, MacroName, []);
-% #m <var>(args..)
-ast_to_ast(?LTag(Line, [?Atom(m)], ?E(Line, call, {[?Var(MacroName)], Args})), State) ->
-    expand_macro(Line, State, MacroName, Args);
 
 % tuple
 ast_to_ast(?S(Line, tuple=Type, Val), State)   ->
@@ -268,12 +248,6 @@ ast_to_ast({wcond, Line, Cond, Body}, State) ->
 ast_to_ast({welse, Line, Body}, State) ->
     {EBody, State1} = ast_to_ast(Body, State),
     R = {clause, Line, [], [[{atom, Line, true}]], EBody},
-    {R, State1};
-
-% binary comprehension
-ast_to_ast(?T(_TLine, [?Atom(b)], ?E(Line, 'for', {Qualifiers, Body})), State) ->
-    {Items, EBody, State1} = lc_to_ast(Line, Qualifiers, Body, State),
-    R = {bc, Line, EBody, Items},
     {R, State1};
 
 % list comprehension
@@ -614,95 +588,6 @@ lc_to_ast(Line, Qualifiers, Body, State) ->
     {Items, State2} = state_map(fun for_qualifier_to_ast/2, Qualifiers, State1),
     {Items, EBody, State2}.
 
-info_to_ast(Line, line, State) ->
-    {{integer, Line, Line}, State};
-info_to_ast(Line, module, #{module := Module}=State) ->
-    {{atom, Line, Module}, State};
-info_to_ast(Line, Name, State) ->
-    State1 = add_error(State, unknown_compiler_info, Line,
-                       expected_got("\"line\" or \"module\"", Name)),
-    {{atom, Line, error}, State1}.
-
-add_bin_element_param(default, Param, State) ->
-    add_bin_element_param([], Param, State);
-add_bin_element_param(L, Param, State) ->
-    {[Param|L], State}.
-
-add_bin_element_param(Line, Params, Param, ValidValues, State) ->
-    IsInValues = lists:member(Param, ValidValues),
-    if IsInValues -> add_bin_element_param(Params, Param, State);
-       true ->
-           Msg = io_lib:format("one of ~p", [ValidValues]),
-           State1 = add_error(State, invalid_bin_type_specifier_value, Line,
-                              expected_got(Msg, Param)),
-           {Params, State1}
-    end.
-
-parse_bin_element_fields(_Line, [], State, BinElement) ->
-    {BinElement, State};
-parse_bin_element_fields(Line, [{kv, _Line, ?Atom(val), ?V(_, var, _VarName)=NewName}|T],
-                         State, {BeType, BeLine, _OldName, Size, Params}) ->
-    {ENewName, State1} = ast_to_ast(NewName, State),
-    NewBinElement = {BeType, BeLine, ENewName, Size, Params},
-    parse_bin_element_fields(Line, T, State1, NewBinElement);
-
-parse_bin_element_fields(Line, [{kv, _Line, ?Atom(size), ?V(_, integer, _Size)=NewSize}|T],
-                         State, {BeType, BeLine, BeName, _OldSize, Params}) ->
-    {ENewSize, State1} = ast_to_ast(NewSize, State),
-    NewBinElement = {BeType, BeLine, BeName, ENewSize, Params},
-    parse_bin_element_fields(Line, T, State1, NewBinElement);
-
-parse_bin_element_fields(Line, [{kv, _Line, ?Atom(unit), ?V(_, integer, Unit)}|T],
-                         State, {BeType, BeLine, BeName, BeSize, Params})
-                        when Unit >= 1 andalso Unit =< 256 ->
-    {NewParams, State1} = add_bin_element_param(Params, {unit, Unit}, State),
-    NewBinElement = {BeType, BeLine, BeName, BeSize, NewParams},
-    parse_bin_element_fields(Line, T, State1, NewBinElement);
-
-parse_bin_element_fields(Line, [{kv, KvLine, ?Atom(type), ?Atom(Type)}|T],
-                         State, {BeType, BeLine, BeName, BeSize, Params}) ->
-    ValidValues = [integer, float, binary, bytes, bitstring, bits, utf8, utf16, utf32],
-    {NewParams, State1} = add_bin_element_param(KvLine, Params, Type, ValidValues, State),
-    NewBinElement = {BeType, BeLine, BeName, BeSize, NewParams},
-    parse_bin_element_fields(Line, T, State1, NewBinElement);
-
-parse_bin_element_fields(Line, [{kv, KvLine, ?Atom(endianness), ?Atom(Endianness)}|T],
-                         State, {BeType, BeLine, BeName, BeSize, Params}) ->
-    ValidValues = [big, little, native],
-    {NewParams, State1} = add_bin_element_param(KvLine, Params, Endianness, ValidValues, State),
-    NewBinElement = {BeType, BeLine, BeName, BeSize, NewParams},
-    parse_bin_element_fields(Line, T, State1, NewBinElement);
-
-parse_bin_element_fields(Line, [{kv, KvLine, ?Atom(sign), ?Atom(Sign)}|T],
-                         State, {BeType, BeLine, BeName, BeSize, Params}) ->
-    ValidValues = [signed, unsigned],
-    {NewParams, State1} = add_bin_element_param(KvLine, Params, Sign, ValidValues, State),
-    NewBinElement = {BeType, BeLine, BeName, BeSize, NewParams},
-    parse_bin_element_fields(Line, T, State1, NewBinElement);
-
-parse_bin_element_fields(Line, [Other|T], State, BinElement) ->
-    Msg = "one of val (var), size (integer), type (atom), sign (atom), endianness (atom), unit (1..256)",
-    OtherLine = element(2, Other),
-    State1 = add_error(State, invalid_bin_type_specifier_field, OtherLine,
-                       expected_got(Msg, {ast, Other})),
-    parse_bin_element_fields(Line, T, State1, BinElement).
-
-to_bin_element(?S(Line, map, Fields), State) ->
-    InitialState =  {bin_element, Line, {var, Line, '_'}, default, default},
-    parse_bin_element_fields(Line, Fields, State, InitialState);
-
-to_bin_element(Other, State) ->
-    Line = element(2, Other),
-    State1 = add_error(State, invalid_bin_type_specifier, Line,
-                       expected_got("\"line\" or \"module\"", Other)),
-    {{atom, Line, error}, State1}.
-
-
-type_specifiers_to_ast(Line, TSList, State) ->
-    {RFields, State1} = lists:mapfoldl(fun to_bin_element/2, State, TSList),
-    R = {bin, Line, RFields},
-    {R, State1}.
-
 add_error(#{errors:=Errors}=State, ErrType, Line, Detail) ->
     Error = {ErrType, Line, Detail},
     NewErrors = [Error|Errors],
@@ -787,12 +672,17 @@ maybe_type_record(R, Line, RecordName, Types, State) ->
     {RType, State1} = fn_spec:parse_record_types(RecordName, Line, Types, State),
     {[RType, R], State1}.
 
-expand_macro(Line, #{macros := Macros}=State, MacroName, Args) ->
-    {EArgs, State1} = ast_to_ast(Args, State),
-    case fn_erl_macro:call_macro(Macros, MacroName, EArgs) of
-        {ok, [Ast]} ->
-            {Ast, State1};
-        {error, Reason} ->
-            State2 = add_error(State1, macro_error, Line, Reason),
-            {{atom, Line, error}, State2}
+path_to_ext_string(Path) ->
+    Parts = lists:map(fun (?Var(Name)) -> "var_" ++ atom_to_list(Name);
+                          (?Atom(Name)) -> "atom_" ++ atom_to_list(Name)
+                      end, Path),
+    string:join(Parts, "_").
+
+handle_tag(Line, Prefix, Path, Ast, State=#{extensions := Extensions}) ->
+    ExtStr = Prefix ++ path_to_ext_string(Path),
+    case fn_exts:handle(ExtStr, Ast, State, Extensions) of
+        {error, Reason} when is_atom(Reason) -> add_error(State, Reason, Line, nil);
+        {error, {Reason, Data}} -> add_error(State, Reason, Line, Data);
+        Other -> Other
     end.
+
