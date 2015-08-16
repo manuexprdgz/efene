@@ -1,13 +1,13 @@
 -module(fn_ext_val_atom_b).
--export([handle/2]).
+-export([handle/3]).
 
 -behaviour(fn_exts).
 
 -include("include/efene.hrl").
 
-handle(?S(Line, list, TSList), State) ->
+handle(_Path, ?S(Line, list, TSList), State) ->
     type_specifiers_to_ast(Line, TSList, State);
-handle(_Ast, _State) ->
+handle(_Path, _Ast, _State) ->
     next.
 
 type_specifiers_to_ast(Line, TSList, State) ->

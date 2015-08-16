@@ -1,13 +1,13 @@
 -module(fn_ext_val_atom_i).
--export([handle/2]).
+-export([handle/3]).
 
 -behaviour(fn_exts).
 
 -include("include/efene.hrl").
 
-handle(?Atom(Line, Name), State) ->
+handle(_Path, ?Atom(Line, Name), State) ->
     info_to_ast(Line, Name, State);
-handle(_Ast, _State) ->
+handle(_Path, _Ast, _State) ->
     next.
 
 info_to_ast(Line, line, State) ->

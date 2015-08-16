@@ -1,17 +1,17 @@
 -module(fn_ext_val_atom_m).
--export([handle/2]).
+-export([handle/3]).
 
 -behaviour(fn_exts).
 
 -include("include/efene.hrl").
 
 % #m <var>
-handle(?Var(Line, MacroName), State) ->
+handle(_Path, ?Var(Line, MacroName), State) ->
     expand_macro(Line, State, MacroName, []);
 % #m <var>(args..)
-handle(?E(Line, call, {[?Var(MacroName)], Args}), State) ->
+handle(_Path, ?E(Line, call, {[?Var(MacroName)], Args}), State) ->
     expand_macro(Line, State, MacroName, Args);
-handle(_Ast, _State) ->
+handle(_Path, _Ast, _State) ->
     next.
 
 expand_macro(Line, #{macros := Macros}=State, MacroName, Args) ->

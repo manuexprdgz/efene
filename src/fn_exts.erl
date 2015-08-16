@@ -1,8 +1,8 @@
 -module(fn_exts).
--export([get_extensions/0, match_extensions/2, handle/4, behaviour_info/1]).
+-export([get_extensions/0, match_extensions/2, handle/5, behaviour_info/1]).
 
 behaviour_info(callbacks) ->
-        [{handle, 2}];
+        [{handle, 3}];
 behaviour_info(_) ->
         undefined.
 
@@ -34,36 +34,36 @@ parse_and_load_extension({Name, Path}) ->
         false -> false
     end.
 
-handle(Name, Ast, State, Extensions) ->
+handle(Name, Path, Ast, State, Extensions) ->
     case match_extensions(Name, Extensions) of
         [] -> {error, notfound};
-        Exts -> handle(Ast, State, Exts)
+        Exts -> handle(Path, Ast, State, Exts)
     end.
 
-handle(Ast, State, []) ->
+handle(_Path, Ast, State, []) ->
     {{error, {nomatch, Ast}}, State};
-handle(Ast, State, [{Module, _ModStr, _ModPath}|Exts]) ->
-    %io:format("looking for handler ~p:handle/2~n", [Module]),
-    try erlang:function_exported(Module, handle, 2) of
+handle(Path, Ast, State, [{Module, _ModStr, _ModPath}|Exts]) ->
+    %io:format("looking for handler ~p:handle/3~n", [Module]),
+    try erlang:function_exported(Module, handle, 3) of
         true -> 
-            %io:format("handler ~p:handle/2 found~n", [Module]),
-            case Module:handle(Ast, State) of
+            %io:format("handler ~p:handle/3 found~n", [Module]),
+            case Module:handle(Path, Ast, State) of
                 next ->
-                    %io:format("handler ~p:handle/2 returned next~n", [Module]),
-                    handle(Ast, State, Exts);
+                    %io:format("handler ~p:handle/3 returned next~n", [Module]),
+                    handle(Path, Ast, State, Exts);
                 Other ->
-                    %io:format("handler ~p:handle/2 returned ~p~n", [Module, Other]),
+                    %io:format("handler ~p:handle/3 returned ~p~n", [Module, Other]),
                     Other
             end;
         false->
-            %io:format("handler ~p:handle/2 not found~n", [Module]),
+            %io:format("handler ~p:handle/3 not found~n", [Module]),
             % TODO: return warning
-            handle(Ast, State, Exts)
+            handle(Path, Ast, State, Exts)
     catch T:E ->
         % TODO: return warning
         %{error, {ext_handler_error, T, E}}
-        io:format("error calling handler ~p:handle/2 ~p: ~p~n", [Module, T, E]),
-        handle(Ast, State, Exts)
+        io:format("error calling handler ~p:handle/3 ~p: ~p~n", [Module, T, E]),
+        handle(Path, Ast, State, Exts)
     end.
 
 

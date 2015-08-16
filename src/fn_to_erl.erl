@@ -14,7 +14,7 @@
 
 -module(fn_to_erl).
 -export([ast_to_ast/2, to_erl/2, add_error/4, new_state/1, expected_got/2,
-        lc_to_ast/4]).
+        lc_to_ast/4, state_map/3, kv_to_ast/3]).
 
 -include("efene.hrl").
 
@@ -126,32 +126,11 @@ ast_to_ast({attr, _Line, [?Atom(Type)], _Params, _Result}=Ast, #{level := 0}=Sta
 
 % ^<path> <expr>
 ast_to_ast(?T(Line, Path, Ast), State) ->
-    handle_tag(Line, "expr_", Path, Ast, State);
-
-% #r.<atom> <atom>
-ast_to_ast(?LTag(Line, [?Atom(r), ?Atom(RecordName)], ?Atom(Field)), State) ->
-    R = {record_index, Line, RecordName, {atom, Line, Field}},
-    {R, State};
-% #r.<atom>.<atom> <var>
-ast_to_ast(?LTag(Line, [?Atom(r), ?Atom(RecordName), ?Atom(Field)], ?Var(RecordVar)), State) ->
-    R = {record_field, Line, {var, Line, RecordVar}, RecordName, {atom, Line, Field}},
-    {R, State};
-% #r.<atom> <var>#<map>
-ast_to_ast(?LTag(Line, [?Atom(r), ?Atom(RecordName)],
-              ?S(_MapLine, map, {Var, KVs})), State) ->
-    {EVar, State1} = ast_to_ast(Var, State),
-    {Items, State2} = state_map(fun to_record_field/2, KVs, State1),
-    R = {record, Line, EVar, RecordName, Items},
-    {R, State2};
-% #r.<atom> <map>
-ast_to_ast(?LTag(Line, [?Atom(r), ?Atom(RecordName)], ?S(_MapLine, map, KVs)), State) ->
-    {Items, State1} = state_map(fun to_record_field/2, KVs, State),
-    R = {record, Line, RecordName, Items},
-    {R, State1};
+    handle_tag(Line, "expr_", Path, Path, Ast, State);
 
 % #<path> <val>
 ast_to_ast(?LTag(Line, Path, Ast), State) ->
-    handle_tag(Line, "val_", Path, Ast, State);
+    handle_tag(Line, "val_", Path, Path, Ast, State);
 
 ast_to_ast(Ast, #{level := 0}=State) ->
     Line = element(2, Ast),
@@ -489,37 +468,6 @@ to_map_field({kvmatch, Line, Key, Val}, State) ->
     R = {map_field_exact, Line, EKey, EVal},
     {R, State1}.
 
-to_record_field({kv, Line, Key, Val}, State) ->
-    {{EKey, EVal}, State1} = kv_to_ast(Key, Val, State),
-    R = {record_field, Line, EKey, EVal},
-    {R, State1};
-to_record_field(Other, State) ->
-    Line = element(2, Other),
-    State1 = add_error(State, bad_record_field_init, Line,
-                       expected_got("initialization", {ast, Other})),
-    {{atom, Line, error}, State1}.
-
-to_record_field_decl(?O(Line, '=', ?V(FLine, atom, FieldName), ?O(_OLine, is, Val, Type)),
-                     State) ->
-    {R, State1} = to_record_field_decl(?O(Line, '=', ?V(FLine, atom, FieldName), Val), State),
-    {{type, R, {Line, has_default, R, Type}}, State1};
-to_record_field_decl(?O(_OLine, is, ?V(Line, 'atom', FieldName), Type),
-                     State) ->
-    {R, State1} = to_record_field_decl(?V(Line, 'atom', FieldName), State),
-    {{type, R, {Line, no_default, R, Type}}, State1};
-to_record_field_decl(?O(Line, '=', ?V(FLine, atom, FieldName), Val), State) ->
-    {EVal, State1} = ast_to_ast(Val, State),
-    R = {record_field, Line, {atom, FLine, FieldName}, EVal},
-    {R, State1};
-to_record_field_decl(?V(Line, 'atom', FieldName), State) ->
-    R = {record_field, Line, {atom, Line, FieldName}},
-    {R, State};
-to_record_field_decl(Other, State) ->
-    Line = element(2, Other),
-    State1 = add_error(State, bad_record_field_decl, Line,
-                       expected_got("atom or assignment", {ast, Other})),
-    {{atom, Line, error}, State1}.
-
 % erlang ast
 % NOTE for now empty case in switch matches the empty tuple
 to_tuple_clause({clause, Line, [], Guard, Body}) ->
@@ -678,11 +626,40 @@ path_to_ext_string(Path) ->
                       end, Path),
     string:join(Parts, "_").
 
-handle_tag(Line, Prefix, Path, Ast, State=#{extensions := Extensions}) ->
+handle_tag(Line, _Prefix, [], _FullPath, Ast, State) ->
+    add_error(State, tag_handler_not_found, Line, {ast, Ast});
+
+handle_tag(Line, Prefix, Path, FullPath, Ast, State=#{extensions := Extensions}) ->
     ExtStr = Prefix ++ path_to_ext_string(Path),
-    case fn_exts:handle(ExtStr, Ast, State, Extensions) of
+    case fn_exts:handle(ExtStr, FullPath, Ast, State, Extensions) of
+        {error, notfound} ->
+            % retry dropping the last item in path, this will try from
+            % most specific to most general, when all path items dropped
+            % it will fail with tag_handler_not_found
+            handle_tag(Line, Prefix, lists:droplast(Path), FullPath, Ast, State);
         {error, Reason} when is_atom(Reason) -> add_error(State, Reason, Line, nil);
         {error, {Reason, Data}} -> add_error(State, Reason, Line, Data);
         Other -> Other
     end.
+
+to_record_field_decl(?O(Line, '=', ?V(FLine, atom, FieldName), ?O(_OLine, is, Val, Type)),
+                     State) ->
+    {R, State1} = to_record_field_decl(?O(Line, '=', ?V(FLine, atom, FieldName), Val), State),
+    {{type, R, {Line, has_default, R, Type}}, State1};
+to_record_field_decl(?O(_OLine, is, ?V(Line, 'atom', FieldName), Type),
+                     State) ->
+    {R, State1} = to_record_field_decl(?V(Line, 'atom', FieldName), State),
+    {{type, R, {Line, no_default, R, Type}}, State1};
+to_record_field_decl(?O(Line, '=', ?V(FLine, atom, FieldName), Val), State) ->
+    {EVal, State1} = ast_to_ast(Val, State),
+    R = {record_field, Line, {atom, FLine, FieldName}, EVal},
+    {R, State1};
+to_record_field_decl(?V(Line, 'atom', FieldName), State) ->
+    R = {record_field, Line, {atom, Line, FieldName}},
+    {R, State};
+to_record_field_decl(Other, State) ->
+    Line = element(2, Other),
+    State1 = add_error(State, bad_record_field_decl, Line,
+                       expected_got("atom or assignment", {ast, Other})),
+    {{atom, Line, error}, State1}.
 
