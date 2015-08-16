@@ -68,6 +68,7 @@ ast_to_ast({attr, Line, [?Atom(include)], [?V(_, string, Path)], noresult},
             {R, State1}
     end;
 
+%-behavio[u]r(name)
 ast_to_ast({attr, Line, [?Atom(AttrName)], [?Atom(BName)], noresult}, #{level := 0}=State) 
         when AttrName == behavior orelse AttrName == behaviour ->
     R = {attribute, Line, AttrName, BName},
@@ -108,13 +109,15 @@ ast_to_ast({attr, Line, [?Atom(record)], [?Atom(RecordName)], ?S(_TLine, tuple, 
     R = {attribute, Line, record, {RecordName, lists:reverse(RFields)}},
     maybe_type_record(R, Line, RecordName, RTypes, State1#{level => 0});
 
-% type and opaque attributes
+% type and opaque without result, error
 ast_to_ast({attr, Line, [?Atom(Type)], _Params, noresult}=Ast, #{level := 0}=State)
   when Type == type orelse Type == opaque ->
     invalid_type_declaration(State, Line, Ast);
+% type and opaque without params, error
 ast_to_ast({attr, Line, [?Atom(Type)], noparams, _Result}=Ast, #{level := 0}=State)
   when Type == type orelse Type == opaque ->
     invalid_type_declaration(State, Line, Ast);
+% type and opaque attributes
 ast_to_ast({attr, _Line, [?Atom(Type)], _Params, _Result}=Ast, #{level := 0}=State)
   when Type == type orelse Type == opaque ->
     fn_spec:type_to_spec(Ast, State);
@@ -145,6 +148,7 @@ ast_to_ast(?E(_Line, call_do, {Place, Call, Fun}), State) ->
                         {call, CallLine, FCall, AllArgs}
                 end);
 
+% -> and ->>
 ast_to_ast(?E(_Line, call_thread, {InitialVal, Calls}), State) ->
     Threaded = lists:foldl(fun (Current, Accum) ->
                                    {Pos, Call} = Current,
@@ -235,12 +239,14 @@ ast_to_ast(?V(Line, fn_ref, {[Mod, Fun], Arity}), State) ->
                         {'fun', Line, {function, EMod, EFun, EArity}}
                 end);
 
+% function reference
 ast_to_ast(?V(Line, fn_ref, {[?Var(Fun)=FunAst], Arity}), State) ->
     State1 = add_error(State, invalid_fn_ref, Line,
               expected_got("atom", {ast, FunAst})),
     R = {'fun', Line, {function, Fun, unwrap(Arity)}},
     {R, State1};
 
+% function reference
 ast_to_ast(?V(Line, fn_ref, {[Fun], Arity}), State) ->
     R = {'fun', Line, {function, unwrap(Fun), unwrap(Arity)}},
     {R, State};
@@ -251,12 +257,14 @@ ast_to_ast(?E(Line, 'when', Clauses), State) ->
     R = {'if', Line, EClauses},
     {R, State1};
 
+% when condition
 ast_to_ast({wcond, Line, Cond, Body}, State) ->
     {ECond, State1} = when_to_ast(Cond, State),
     {EBody, State2} = ast_to_ast(Body, State1),
     R = {clause, Line, [], ECond, EBody},
     {R, State2};
 
+% when else
 ast_to_ast({welse, Line, Body}, State) ->
     {EBody, State1} = ast_to_ast(Body, State),
     R = {clause, Line, [], [[{atom, Line, true}]], EBody},
@@ -320,6 +328,7 @@ ast_to_ast(?E(Line, switch, {Value, ?E(_CaseLine, 'case', Clauses)}), State) ->
                         {'case', Line, EValue, TupleClauses}
                 end);
 
+% match clause
 ast_to_ast({cmatch, Line, {Conds, When, Body}}, State) ->
     {EConds, State1} = ast_to_ast(Conds, State),
     {EWhen, State2} = when_to_ast(When, State1),
@@ -327,6 +336,7 @@ ast_to_ast({cmatch, Line, {Conds, When, Body}}, State) ->
     R = {clause, Line, EConds, EWhen, EBody},
     {R, State3};
 
+% match else clause
 ast_to_ast({celse, Line, Body}, State) ->
     {EBody, State1} = ast_to_ast(Body, State),
     R = {clause, Line, [{var, Line, '_'}], [], EBody},
@@ -338,12 +348,14 @@ ast_to_ast(?E(Line, 'begin', Body), State) ->
     R = {block, Line, EBody},
     {R, State1};
 
+% fn
 ast_to_ast(?E(Line, fn, ?E(_CLine, 'case', Cases)), State) ->
     {ok, FixedCases} = expand_case_else_match(Cases),
     {EFixedCases, State1} = ast_to_ast(FixedCases, State),
     R = {'fun', Line, {clauses, EFixedCases}},
     {R, State1};
 
+% named fn
 ast_to_ast(?E(Line, fn, {?V(_VLine, var, FName), ?E(_CLine, 'case', Cases)}), State) ->
     {ok, FixedCases} = expand_case_else_match(Cases),
     {EFixedCases, State1} = ast_to_ast(FixedCases, State),
@@ -357,6 +369,7 @@ ast_to_ast(?E(Line, call, {[Mod, Fun], Args}), State) ->
                         {call, Line, {remote, Line, EMod, EFun}, EArgs}
                 end);
 
+% call
 ast_to_ast(?E(Line, call, {[Fun], Args}), State) ->
     with_childs(State, Fun, Args,
                 fun (EFun, EArgs) -> {call, Line, EFun, EArgs} end);
