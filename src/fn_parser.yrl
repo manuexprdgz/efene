@@ -108,8 +108,13 @@ e_cases -> e_case_cond : ['$1'].
 e_cases -> e_case_cond e_case_else : ['$1', '$2'].
 e_cases -> e_case_cond e_cases : ['$1'|'$2'].
 
-e_switch -> match literal colon e_case end:
-    {expr, line('$1'), switch, {'$2', '$4'}}.
+e_switch -> match seq_items colon e_case end:
+    case '$2' of
+        [Item] ->
+            {expr, line('$1'), switch, {Item, '$4'}};
+        Items ->
+            {expr, line('$1'), switch, {seq_value(Items, line('$1'), tuple), '$4'}}
+    end.
 
 e_receive -> receive e_case end:
     {expr, line('$1'), 'receive', {'$2', noafter}}.

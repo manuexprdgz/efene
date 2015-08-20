@@ -347,3 +347,25 @@ fn test19 @public case A when A is a, A is b, A is c: A
 end
 
 fn test20 @public case A when A is a, A is b, A is c: A end
+
+fn my_xor case V1, V2:
+
+  R1 = match (V1, V2):
+    case A, A: false
+    case _, _: true
+  end
+
+  R2 = match V1, V2:
+    case B, B: false
+    case _, _: true
+  end
+
+  T = (V1, V2)
+
+  R3 = match T:
+    case C, C: false
+    case _, _: true
+  end
+
+  (R1, R2, R3)
+end
