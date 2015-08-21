@@ -3,7 +3,7 @@
 
 -behaviour(fn_exts).
 
--include("include/efene.hrl").
+-include("efene.hrl").
 
 % #m <var>
 handle(_Path, ?Var(Line, MacroName), State) ->

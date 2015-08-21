@@ -3,7 +3,7 @@
 
 -behaviour(fn_exts).
 
--include("include/efene.hrl").
+-include("efene.hrl").
 
 handle(_Path, ?V(Line, string, [Char]), State) ->
     {{char, Line, Char}, State};

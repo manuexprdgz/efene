@@ -3,7 +3,7 @@
 
 -behaviour(fn_exts).
 
--include("include/efene.hrl").
+-include("efene.hrl").
 
 handle(_Path, ?S(Line, list, TSList), State) ->
     type_specifiers_to_ast(Line, TSList, State);

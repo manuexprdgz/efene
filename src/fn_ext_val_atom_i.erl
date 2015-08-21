@@ -3,7 +3,7 @@
 
 -behaviour(fn_exts).
 
--include("include/efene.hrl").
+-include("efene.hrl").
 
 handle(_Path, ?Atom(Line, Name), State) ->
     info_to_ast(Line, Name, State);

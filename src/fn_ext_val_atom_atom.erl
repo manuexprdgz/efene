@@ -3,7 +3,7 @@
 
 -behaviour(fn_exts).
 
--include("include/efene.hrl").
+-include("efene.hrl").
 
 handle(_Path, ?V(Line, string, AtomStr), State) ->
     {{atom, Line, list_to_atom(AtomStr)}, State};
