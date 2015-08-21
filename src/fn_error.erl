@@ -62,7 +62,9 @@ normalize({Line, erl_lint, Reason}) ->
     normalize_erl_lint(Line, Reason);
 normalize({_Path, [{_, erl_lint, _Reason}|_]=Errors}) ->
     ErrorsStrs = [normalize(Error) || Error <- Errors],
-    [string:join(ErrorsStrs, "\n"), "\n"].
+    [string:join(ErrorsStrs, "\n"), "\n"];
+normalize(Other) ->
+    io_lib:format("~p", [Other]).
 
 normalize_erl_lint(Line, Reason) ->
     io_lib:format("line ~p: ~s", [Line, normalize_erl_lint(Reason)]).
