@@ -478,10 +478,6 @@ to_tuple_clause({clause, Line, Matches, Guard, Body}) ->
     {clause, Line, [{tuple, Line, Matches}], Guard, Body}.
 
 for_qualifier_to_ast({filter, Ast}, State) -> ast_to_ast(Ast, State);
-for_qualifier_to_ast({bgenerate, Line, Left, Right}, State) ->
-    {{ELeft, ERight}, State1} = kv_to_ast(Left, Right, State),
-    R = {b_generate, Line, ELeft, ERight},
-    {R, State1};
 for_qualifier_to_ast({generate, Line, Left, Right}, State) ->
     {{ELeft, ERight}, State1} = kv_to_ast(Left, Right, State),
     R = {generate, Line, ELeft, ERight},
