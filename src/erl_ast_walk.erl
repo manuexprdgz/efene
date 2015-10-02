@@ -403,7 +403,7 @@ expr({record,Line,Name,Inits0}, Fun) ->
 expr({record_field,Line,Rec0,Name,Field0}, Fun) ->
     Rec1 = expr(Rec0, Fun),
     Field1 = expr(Field0, Fun),
-    Fun({record_field,Line,Rec1,Name,Field1}, Fun);
+    Fun({record_field,Line,Rec1,Name,Field1});
 expr({record,Line,Rec0,Name,Upds0}, Fun) ->
     Rec1 = expr(Rec0, Fun),
     Upds1 = record_updates(Upds0, Fun),
