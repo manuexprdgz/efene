@@ -159,21 +159,27 @@ fn types @public
            42
        end
   case for_expr:
-       for X in lists.seq(1, 10):
-         X + 1
-       end
+    for X in lists.seq(1, 10):
+      X + 1
+    end
 
-       for X in lists.seq(1, 10); when X % 2 is 0:
-         X + 1
-       end
+    for X in lists.seq(1, 10); when X % 2 is 0:
+      X + 1
+    end
 
-       for X in lists.seq(1, 10); Y in lists.seq(10, 20):
-         (X, Y)
-       end
+    for X in lists.seq(1, 10); Y in lists.seq(10, 20):
+      (X, Y)
+    end
+
+    B = for #b [{val: B1}] in A: B1 end
+    C = for C1 in A: C1 end
   case bin_for_expr:
-       ^b for A in foo(10):
-           A + 1
-       end
+    ^b for A in foo(10):
+      A + 1
+    end
+
+    D = ^b for #b [{val: D1}] <- A: #b [{val: D1}] end
+    E = ^b for E1 <- A: #b [{val: D1}] end
   case fun_expr:
 
         Plus = fn
