@@ -74,7 +74,7 @@ AtomString  = `(\\\^.|\\.|[^\`])*`
 
 % identifiers and atoms
 Identifier  = [A-Z\_][a-zA-Z0-9\_]*
-Atom        = ([a-z][a-zA-Z0-9\_@]*)|('(\\\^.|\\.|[^\'])*')
+Atom        = [a-z][a-zA-Z0-9\_@]*
 
 Rules.
 
