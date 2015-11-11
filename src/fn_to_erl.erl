@@ -345,7 +345,7 @@ ast_to_ast(?V(Line, boolean, Val), State)      -> {{atom, Line, Val}, State};
 ast_to_ast(?V(Line, var=Type, Val), State)     -> {{Type, Line, Val}, State};
 ast_to_ast(?V(Line, string=Type, Val), State)  -> {{Type, Line, Val}, State};
 ast_to_ast(?V(Line, bstring, Val), State) ->
-    R = {bin, Line, [{bin_element, 5, {string, Line, Val}, default, default}]},
+    R = {bin, Line, [{bin_element, Line, {string, Line, Val}, default, default}]},
     {R, State};
 
 % unary ops
