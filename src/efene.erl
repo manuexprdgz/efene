@@ -73,7 +73,7 @@ to_erl(Path) ->
     end.
 
 to_code(Path) ->
-    to_code(Path).
+    to_code(Path, []).
 
 to_code(Path, Opts) ->
     case to_mod(Path) of
