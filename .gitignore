@@ -14,3 +14,5 @@ docs/build/sphinx/
 ebin
 bin
 .eunit
+efene.d
+.erlang.mk
