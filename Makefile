@@ -1,6 +1,6 @@
 PROJECT = efene
 DEPS = aleppo
-dep_aleppo = git https://github.com/marianoguerra/aleppo expose-macro-info
+dep_aleppo = git https://github.com/ErlyORM/aleppo master
 include erlang.mk
 
 fnshell:
