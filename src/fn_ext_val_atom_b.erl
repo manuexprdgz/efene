@@ -17,8 +17,14 @@ type_specifiers_to_ast(Line, TSList, State) ->
 
 var_to_erl_var(?Var(Line, Name)) -> {var, Line, Name}.
 
+% if value is the _ var assume defaults
 to_bin_element({kv, Line, Name=?Var(_), ?Var('_')}, State) ->
     BinElement =  {bin_element, Line, var_to_erl_var(Name), default, default},
+    {BinElement, State};
+% if value is an integer assume it's the size
+to_bin_element({kv, Line, Name=?Var(_), ?Int(SLine, SVal)}, State) ->
+    BinElement =  {bin_element, Line, var_to_erl_var(Name),
+                   {integer, SLine, SVal}, default},
     {BinElement, State};
 to_bin_element({kv, Line, Name=?Var(_), ?S(_MapLine, map, Fields)}, State) ->
     InitialState =  {bin_element, Line, var_to_erl_var(Name), default, default},

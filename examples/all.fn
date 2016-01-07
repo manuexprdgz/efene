@@ -105,6 +105,11 @@ fn types @public
             _: {endianness: big},
             _: {unit: 8},
             B: {size: 8, type: float, sign: signed, endianness: little, unit: 16}}
+    Packet = nil
+    #b {Version:4, IHL:4, TypeOfService:8, TotalLength:16,  Identification:16,
+        FlagX:1, FlagD:1, FlagM:1,  FragmentOffset:13, TTL:8, Protocol:8,
+        HeaderCheckSum:16, SourceAddress:32, DestinationAddress:32,
+        Rest: {type: binary}} = Packet
   case call:
     L = lists
     S = seq
