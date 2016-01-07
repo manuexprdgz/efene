@@ -21,6 +21,11 @@ var_to_erl_var(?Var(Line, Name)) -> {var, Line, Name}.
 to_bin_element({kv, Line, Name=?Var(_), ?Var('_')}, State) ->
     BinElement =  {bin_element, Line, var_to_erl_var(Name), default, default},
     {BinElement, State};
+to_bin_element({kv, Line, Name=?Var(_), ?Atom(ALine, AName)}, State) ->
+    % reuse param logic by building a map {type: AName}
+    to_bin_element({kv, Line, Name, ?S(ALine, map,
+                                       [{kv, ALine, ?Atom(ALine, type),
+                                         ?Atom(ALine, AName)}])}, State);
 % if value is an integer assume it's the size
 to_bin_element({kv, Line, Name=?Var(_), ?Int(SLine, SVal)}, State) ->
     BinElement =  {bin_element, Line, var_to_erl_var(Name),
