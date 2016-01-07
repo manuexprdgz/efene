@@ -5,7 +5,7 @@
 
 -include("efene.hrl").
 
-handle(_Path, ?S(Line, list, TSList), State) ->
+handle(_Path, ?S(Line, map, TSList), State) ->
     type_specifiers_to_ast(Line, TSList, State);
 handle(_Path, _Ast, _State) ->
     next.
@@ -15,8 +15,13 @@ type_specifiers_to_ast(Line, TSList, State) ->
     R = {bin, Line, RFields},
     {R, State1}.
 
-to_bin_element(?S(Line, map, Fields), State) ->
-    InitialState =  {bin_element, Line, {var, Line, '_'}, default, default},
+var_to_erl_var(?Var(Line, Name)) -> {var, Line, Name}.
+
+to_bin_element({kv, Line, Name=?Var(_), ?Var('_')}, State) ->
+    BinElement =  {bin_element, Line, var_to_erl_var(Name), default, default},
+    {BinElement, State};
+to_bin_element({kv, Line, Name=?Var(_), ?S(_MapLine, map, Fields)}, State) ->
+    InitialState =  {bin_element, Line, var_to_erl_var(Name), default, default},
     parse_bin_element_fields(Line, Fields, State, InitialState);
 
 to_bin_element(Other, State) ->
@@ -27,11 +32,6 @@ to_bin_element(Other, State) ->
 
 parse_bin_element_fields(_Line, [], State, BinElement) ->
     {BinElement, State};
-parse_bin_element_fields(Line, [{kv, _Line, ?Atom(val), ?V(_, var, _VarName)=NewName}|T],
-                         State, {BeType, BeLine, _OldName, Size, Params}) ->
-    {ENewName, State1} = fn_to_erl:ast_to_ast(NewName, State),
-    NewBinElement = {BeType, BeLine, ENewName, Size, Params},
-    parse_bin_element_fields(Line, T, State1, NewBinElement);
 
 parse_bin_element_fields(Line, [{kv, _Line, ?Atom(size), ?V(_, integer, _Size)=NewSize}|T],
                          State, {BeType, BeLine, BeName, _OldSize, Params}) ->
