@@ -10,7 +10,7 @@ behaviour_info(_) ->
 all_modules() ->
     [{list_to_atom(filename:rootname(filename:basename(F))), filename:dirname(F)} ||
          P <- code:get_path(),
-         F <- filelib:wildcard(P ++ "/*.beam")].
+         F <- filelib:wildcard(P ++ "/*.beam")] ++ code:all_loaded().
 
 get_extensions() ->
     lists:filtermap(fun parse_and_load_extension/1, all_modules()).
