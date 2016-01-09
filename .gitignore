@@ -16,3 +16,6 @@ bin
 .eunit
 efene.d
 .erlang.mk
+TODO
+efene
+scratch.erl
