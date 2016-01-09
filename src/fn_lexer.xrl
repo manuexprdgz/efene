@@ -187,7 +187,6 @@ is_reserved("when")    -> true;
 is_reserved("def")     -> true;
 
 is_reserved("cond")    -> true;
-is_reserved("fun")     -> true;
 is_reserved("let")     -> true;
 is_reserved("of")      -> true;
 
