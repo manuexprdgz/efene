@@ -11,17 +11,10 @@ loop(Bindings) ->
       Input ->
           case handle_input(Input, Bindings) of
               {ok, NewBindings} ->
-                  loop(NewBindings);
-              {halt, NewBindings} ->
-                  c:q(),
-                  io:format("~nBye!~n"),
-                  timer:sleep(5000), % to avoid printing the next ">>>"
                   loop(NewBindings)
           end
   end.
 
-handle_input("exit\n", Bindings) ->
-    {halt, Bindings};
 handle_input(Input, Bindings) ->
     case str_to_erl_ast(Input, "repl") of
         {ok, {[Ast], _State}} ->
@@ -47,6 +40,25 @@ handle_input(Input, Bindings) ->
             {ok, Bindings}
     end.
 
+lfun_value_handler(help, []) -> help();
+lfun_value_handler(i, []) -> c:i();
+lfun_value_handler(i, [Pids]) -> c:i(Pids);
+lfun_value_handler(l, [M]) -> c:l(M);
+lfun_value_handler(cd, [Dir]) -> c:cd(Dir);
+lfun_value_handler(ec, [F]) -> c:c(F);
+lfun_value_handler(ec, [F, Os]) -> c:c(F, Os);
+lfun_value_handler(m, []) -> c:m();
+lfun_value_handler(pwd, []) -> c:pwd();
+lfun_value_handler(flush, []) -> c:flush();
+lfun_value_handler(regs, []) -> c:regs();
+lfun_value_handler(ls, []) -> c:ls();
+lfun_value_handler(ls, [Dir]) -> c:ls(Dir);
+lfun_value_handler(q, []) ->
+    c:q(),
+    io:format("~nBye!~n"),
+    timer:sleep(5000); % to avoid printing the next ">>>"
+lfun_value_handler(clear, []) ->
+    io:format("\e[H\e[J");
 lfun_value_handler(Name, Arguments) ->
     throw({not_defined, {Name, Arguments}}).
 
@@ -54,7 +66,7 @@ nlfun_value_handler({Mod, Fun}, Arguments) ->
     erlang:apply(Mod, Fun, Arguments).
 
 main() ->
-    io:format("efene shell (write exit to quit, Ctrl+g for Job Control Mode)~n~n"),
+    io:format("efene shell (call q() to quit, help() for help, Ctrl+g for Job Control Mode)~n~n"),
     Bindings = erl_eval:new_bindings(),
     loop(Bindings).
 
@@ -109,3 +121,23 @@ pprint_data(M) when is_map(M) ->
     io_lib:format("{~s}", [CsItems]);
 pprint_data(V) ->
     io_lib:format("~p", [V]).
+
+help() ->
+    io:put_chars(<<"\nefene shell built-in functions\n\n"
+                   "b()        -- display all variable bindings\n"
+                   "c(File)    -- compile and load code in <file>\n"
+                   "cd(Dir)    -- change working directory to <dir>\n"
+                   "clear()    -- clear the the REPL output\n"
+                   "ec(File)   -- compile and load code in erlang <file>\n"
+                   "help()     -- help info\n"
+                   "i()        -- information about the system\n"
+                   "l(Module)  -- load or reload <module>\n"
+                   "ls()       -- list files in the current directory\n"
+                   "ls(dir)    -- list files in directory <dir>\n"
+                   "m()        -- which modules are loaded\n"
+                   "m(Mod)     -- information about module <mod>\n"
+                   "pwd()      -- print working directory\n"
+                   "q()        -- quit - shorthand for init:stop/0\n"
+                   "flush()    -- flushes all messages sent to the shell\n"
+                   "regs()     -- information about registered processes\n\n">>).
+
