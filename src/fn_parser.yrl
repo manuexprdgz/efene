@@ -17,7 +17,6 @@ Nonterminals
     l_atom l_var l_integer l_float l_boolean l_string l_bstring l_fn l_fn_ref
     guard_seq seq_items l_tuple l_list l_cons
     kv_items kv_item
-    kv_match_items kv_match_item l_map_match
     kv_key kv_val l_map l_map_update
     e_bool
     e_case e_cases e_case_cond e_case_else
@@ -221,7 +220,6 @@ raw_literal -> l_tuple : '$1'.
 raw_literal -> l_list : '$1'.
 raw_literal -> l_cons : '$1'.
 raw_literal -> l_map : '$1'.
-raw_literal -> l_map_match : '$1'.
 raw_literal -> l_map_update : '$1'.
 raw_literal -> l_fn : '$1'.
 raw_literal -> l_fn_ref : '$1'.
@@ -270,22 +268,16 @@ l_map_update -> l_var hash l_map :
     {seq, Line, map, {'$1', Items}}.
 
 
-l_map_match -> open_map kv_match_items close_map: seq_value('$2', line('$1'), map).
-
 kv_key -> literal : '$1'.
 kv_val -> literal : '$1'.
 
 kv_item -> kv_key colon kv_val: {kv, line('$1'), '$1', '$3'}.
+kv_item -> kv_key assign kv_val: {kvmatch, line('$1'), '$1', '$3'}.
 
 kv_items -> kv_item: ['$1'].
 kv_items -> kv_item sep: ['$1'].
 kv_items -> kv_item sep kv_items: ['$1'|'$3'].
 
-kv_match_items -> kv_match_item: ['$1'].
-kv_match_items -> kv_match_item sep: ['$1'].
-kv_match_items -> kv_match_item sep kv_match_items: ['$1'|'$3'].
-
-kv_match_item -> kv_key assign kv_val: {kvmatch, line('$1'), '$1', '$3'}.
 
 attrs -> attr : ['$1'].
 attrs -> attr attrs : ['$1'|'$2'].
