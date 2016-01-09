@@ -15,30 +15,38 @@ type_specifiers_to_ast(Line, TSList, State) ->
     R = {bin, Line, RFields},
     {R, State1}.
 
-var_to_erl_var(?Var(Line, Name)) -> {var, Line, Name}.
+parse_bin_key_element(?Var(Line, Name)) -> {ok, {var, Line, Name}};
+parse_bin_key_element(?Int(Line, Value)) -> {ok, {integer, Line, Value}};
+parse_bin_key_element(Other) -> {error, {invalid_bin_key, Other}}.
 
 % if value is the _ var assume defaults
-to_bin_element({kv, Line, Name=?Var(_), ?Var('_')}, State) ->
-    BinElement =  {bin_element, Line, var_to_erl_var(Name), default, default},
-    {BinElement, State};
-to_bin_element({kv, Line, Name=?Var(_), ?Atom(ALine, AName)}, State) ->
-    % reuse param logic by building a map {type: AName}
-    to_bin_element({kv, Line, Name, ?S(ALine, map,
+to_bin_element({kv, Line, Key, ?Var(VLine, '_')}, State) ->
+    to_bin_element({kv, Line, Key, ?S(VLine, map, [])}, State);
+% if value is an atom assume it's the type
+to_bin_element({kv, Line, Key, ?Atom(ALine, AName)}, State) ->
+    to_bin_element({kv, Line, Key, ?S(ALine, map,
                                        [{kv, ALine, ?Atom(ALine, type),
                                          ?Atom(ALine, AName)}])}, State);
 % if value is an integer assume it's the size
-to_bin_element({kv, Line, Name=?Var(_), ?Int(SLine, SVal)}, State) ->
-    BinElement =  {bin_element, Line, var_to_erl_var(Name),
-                   {integer, SLine, SVal}, default},
-    {BinElement, State};
-to_bin_element({kv, Line, Name=?Var(_), ?S(_MapLine, map, Fields)}, State) ->
-    InitialState =  {bin_element, Line, var_to_erl_var(Name), default, default},
-    parse_bin_element_fields(Line, Fields, State, InitialState);
+to_bin_element({kv, Line, Key, Size=?Int(SLine, _SVal)}, State) ->
+    to_bin_element({kv, Line, Key, ?S(SLine, map,
+                                       [{kv, SLine, ?Atom(SLine, size),
+                                         Size}])}, State);
+to_bin_element({kv, Line, Key, ?S(_MapLine, map, Fields)}, State) ->
+    case parse_bin_key_element(Key) of
+        {ok, EKey} ->
+            InitialState =  {bin_element, Line, EKey, default, default},
+            parse_bin_element_fields(Line, Fields, State, InitialState);
+        {error, _Reason} ->
+            State1 = fn_to_erl:add_error(State, invalid_bin_type_specifier_field, Line,
+                                         fn_to_erl:expected_got("var or integer", Key)),
+            {{atom, Line, error}, State1}
+    end;
 
 to_bin_element(Other, State) ->
     Line = element(2, Other),
-    State1 = fn_to_erl:add_error(State, invalid_bin_type_specifier, Line,
-                       fn_to_erl:expected_got("\"line\" or \"module\"", Other)),
+    State1 = fn_to_erl:add_error(State, invalid_bin_type_specifier_value, Line,
+                       fn_to_erl:expected_got("_, integer or map", Other)),
     {{atom, Line, error}, State1}.
 
 parse_bin_element_fields(_Line, [], State, BinElement) ->
