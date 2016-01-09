@@ -190,6 +190,8 @@ main(["erl2ast", File]) ->
     print(from_erl(File));
 main(["beam", File]) ->
     main(["beam", File, "."]);
+main(["shell"]) ->
+    user_drv:start(["tty_sl -c -e", {fn_repl, start, []}]);
 main(["beam", File, OutputDir]) ->
     case compile(File, OutputDir, [debug_info]) of
         {ok, CompileInfo} ->

@@ -1,0 +1,2 @@
+#!/usr/bin/env sh
+erl -run efene main shell $@ -noshell -noinput -pa ebin 
