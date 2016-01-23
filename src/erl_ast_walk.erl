@@ -382,7 +382,7 @@ expr({map,Line,Map0,Es0}, Fun) ->
     Fun({map,Line,Map1,Es1});
 expr({map,Line,Es0}, Fun) ->
     Es1 = exprs(Es0, Fun),
-    Fun({map,Line,Es1}, Fun);
+    Fun({map,Line,Es1});
 expr({map_field_assoc,Line,K,V}, Fun) ->
     Ke = expr(K, Fun),
     Ve = expr(V, Fun),
