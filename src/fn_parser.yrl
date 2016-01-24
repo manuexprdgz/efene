@@ -269,7 +269,7 @@ l_map_update -> l_var hash l_map :
 
 
 kv_key -> literal : '$1'.
-kv_val -> literal : '$1'.
+kv_val -> e_bool : '$1'.
 
 kv_item -> kv_key colon kv_val: {kv, line('$1'), '$1', '$3'}.
 kv_item -> kv_key assign kv_val: {kvmatch, line('$1'), '$1', '$3'}.
