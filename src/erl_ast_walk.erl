@@ -548,10 +548,10 @@ record_inits([], _Fun, State) -> {[], State}.
 %%  by the *linter*!.
 
 record_updates([{record_field,Lf,{atom,La,F},Val0}|Us], Fun, State) ->
-    {Val1, State} = expr(Val0, Fun, State),
-    {H, State1} = Fun(State, {record_field,Lf,{atom,La,F},Val1}),
-    {T, State2} = record_updates(Us, Fun, State1),
-    {[H|T], State2};
+    {Val1, State1} = expr(Val0, Fun, State),
+    {H, State2} = Fun(State1, {record_field,Lf,{atom,La,F},Val1}),
+    {T, State3} = record_updates(Us, Fun, State2),
+    {[H|T], State3};
 record_updates([], _Fun, State) -> {[], State}.
 
 %% -type icr_clauses([Clause]) -> [Clause].
