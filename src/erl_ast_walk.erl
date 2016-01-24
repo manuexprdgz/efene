@@ -75,7 +75,9 @@ form({eof,Line}, Fun, State) -> Fun(State, {eof,Line}).
 %% -type farity_list([Farity]) -> [Farity] when Farity <= {atom(),integer()}.
 
 farity_list([{Name,Arity}|Fas], Fun, State) ->
-    [Fun(State, {Name,Arity})|farity_list(Fas, Fun, State)];
+    {H, State1} = Fun(State, {Name,Arity}),
+    {T, State2} = farity_list(Fas, Fun, State1),
+    {[H|T], State2};
 farity_list([], _Fun, State) -> {[], State}.
 
 %% -type record_defs([RecDef]) -> [RecDef].
