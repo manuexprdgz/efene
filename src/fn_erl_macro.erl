@@ -143,11 +143,12 @@ parse_tokens(Tokens, Refs) ->
     end.
 
 replace_ast_refs(Ast, Refs) ->
-    Walker = fun ({var, _, Val}) when is_reference(Val) ->
-                     maps:get(Val, Refs);
-                 (Other) -> Other
+    Walker = fun (State, {var, _, Val}) when is_reference(Val) ->
+                     {maps:get(Val, Refs), State};
+                 (State, Other) -> {Other, State}
              end,
-    erl_ast_walk:exprs(Ast, Walker).
+    {Node, _NewState} = erl_ast_walk:exprs(Ast, Walker, no_state),
+    Node.
 
 remove_eof([], Accum) -> lists:reverse(Accum);
 remove_eof([{eof, _}|T], Accum) -> remove_eof(T, Accum);
