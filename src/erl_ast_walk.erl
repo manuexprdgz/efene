@@ -99,7 +99,7 @@ record_defs([], _Fun, State) -> {[], State}.
 
 function(Name, Arity, Clauses0, Fun, State) ->
     {Clauses1, State1} = clauses(Clauses0, Fun, State),
-    Fun(State1, {Name,Arity,Clauses1}).
+    {{Name,Arity,Clauses1}, State1}.
 
 %% -type clauses([Clause]) -> [Clause].
 
