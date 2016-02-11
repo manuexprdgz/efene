@@ -16,28 +16,32 @@ loop(Bindings) ->
   end.
 
 handle_input(Input, Bindings) ->
-    case str_to_erl_ast(Input, "repl") of
-        {ok, {[Ast], _State}} ->
-            try
-                case erl_eval:expr(Ast, Bindings,
-                                   {value, fun lfun_value_handler/2},
-                                   {value, fun nlfun_value_handler/2}) of
-                    {value, Value, B1} ->
-                        print(Value),
-                        {ok, B1};
-                    Other ->
-                        io:format("error: ~p~n", [Other]),
-                        {ok, Bindings}
-                end
-            catch
-                T:E ->
-                    io:format("~p: ~p~n~n", [T, E]),
-                    pprint_strace(erlang:get_stacktrace()),
-                    {ok, Bindings}
-            end;
+    case string:strip(string:strip(Input, both, $\n)) of
+        "" -> {ok, Bindings};
         Other ->
-            print(Other),
-            {ok, Bindings}
+            case str_to_erl_ast(Input, "repl") of
+                {ok, {[Ast], _State}} ->
+                    try
+                        case erl_eval:expr(Ast, Bindings,
+                                           {value, fun lfun_value_handler/2},
+                                           {value, fun nlfun_value_handler/2}) of
+                            {value, Value, B1} ->
+                                print(Value),
+                                {ok, B1};
+                            Other ->
+                                io:format("error: ~p~n", [Other]),
+                                {ok, Bindings}
+                        end
+                    catch
+                        T:E ->
+                            io:format("~p: ~p~n~n", [T, E]),
+                            pprint_strace(erlang:get_stacktrace()),
+                            {ok, Bindings}
+                    end;
+                Other ->
+                    print(Other),
+                    {ok, Bindings}
+            end
     end.
 
 lfun_value_handler(help, []) -> help();
