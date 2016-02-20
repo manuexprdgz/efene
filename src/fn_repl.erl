@@ -1,5 +1,5 @@
 -module(fn_repl).
--export([main/0, start/0]).
+-export([main/0, start/0, pprint_data/1]).
 
 start() ->
  spawn(fun main/0).
