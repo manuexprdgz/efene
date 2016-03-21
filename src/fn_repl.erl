@@ -18,7 +18,7 @@ loop(Bindings) ->
 handle_input(Input, Bindings) ->
     case string:strip(string:strip(Input, both, $\n)) of
         "" -> {ok, Bindings};
-        Other ->
+        _Other ->
             case str_to_erl_ast(Input, "repl") of
                 {ok, {[Ast], _State}} ->
                     try
@@ -28,8 +28,8 @@ handle_input(Input, Bindings) ->
                             {value, Value, B1} ->
                                 print(Value),
                                 {ok, B1};
-                            Other ->
-                                io:format("error: ~p~n", [Other]),
+                            Other1 ->
+                                io:format("error: ~p~n", [Other1]),
                                 {ok, Bindings}
                         end
                     catch
@@ -38,8 +38,8 @@ handle_input(Input, Bindings) ->
                             pprint_strace(erlang:get_stacktrace()),
                             {ok, Bindings}
                     end;
-                Other ->
-                    print(Other),
+                Other2 ->
+                    print(Other2),
                     {ok, Bindings}
             end
     end.
