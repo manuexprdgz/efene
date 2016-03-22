@@ -81,7 +81,11 @@ to_code(Path, Opts) ->
             case compile:forms(Ast, [return, strong_validation|Opts]) of
                 {error, _Errors, _Warnings}=Error -> Error;
                 error -> {error, [{error, compile_forms_error}], []};
-                {ok, _ModuleName0, [{_FileName0, Warnings0}]} ->
+                {ok, _ModuleName0, ValidationInfo} ->
+                    Warnings0 = case ValidationInfo of
+                        [] -> [];
+                        [{_FileName0, W0}] -> W0
+                    end,
                     case compile:forms(Ast, Opts) of
                         {ok, ModuleName, Code} -> {ok, ModuleName, Code, Warnings0};
                         {ok, ModuleName, Code, Warnings} ->
