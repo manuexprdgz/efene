@@ -19,7 +19,7 @@ Nonterminals
     kv_items kv_item
     kv_key kv_val l_map l_map_update
     e_bool
-    e_case e_cases e_case_cond e_case_else
+    e_case e_cases e_case_cond e_case_else e_else_only_case
     e_switch e_receive e_try
     e_when e_when_cond e_when_else e_when_final_else e_when_elses
     e_begin
@@ -94,6 +94,10 @@ e_def_tl -> def l_atom seq_items colon attrs e_case end:
     Cases = '$6',
     {expr, line('$1'), def, {Name, Args, Attrs, Cases}}.
 
+
+e_else_only_case -> e_case_else : {expr, line('$1'), 'case', ['$1']}.
+e_else_only_case -> e_case : '$1'.
+
 e_case -> e_cases : {expr, line('$1'), 'case', '$1'}.
 
 e_case_cond -> case colon body : {cmatch, line('$1'), {[], nowhen, '$3'}}.
@@ -127,10 +131,10 @@ e_receive -> receive after literal colon body end:
 e_try -> try body after body end:
     {expr, line('$1'), 'try', {'$2', nocatch, '$4'}}.
 
-e_try -> try body catch e_case end:
+e_try -> try body catch e_else_only_case end:
     {expr, line('$1'), 'try', {'$2', '$4', noafter}}.
 
-e_try -> try body catch e_case after body end:
+e_try -> try body catch e_else_only_case after body end:
     {expr, line('$1'), 'try', {'$2', '$4', '$6'}}.
 
 e_when -> e_when_cond end : {expr, line('$1'), 'when', ['$1']}.

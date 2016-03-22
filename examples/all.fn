@@ -219,6 +219,12 @@ fn types @public
 
        try
          1/0
+       catch else:
+         ok
+       end
+
+       try
+         1/0
        catch
            case error, badarith: ok
        after
