@@ -60,11 +60,20 @@ normalize({error, Other}) ->
     io_lib:format("~p", [Other]);
 normalize({Line, erl_lint, Reason}) ->
     normalize_erl_lint(Line, Reason);
+normalize({Line, sys_core_fold, Reason}) ->
+    io_lib:format("line ~p: ~s", [Line, normalize_sys_core_fold(Reason)]);
 normalize({_Path, [{_, erl_lint, _Reason}|_]=Errors}) ->
     ErrorsStrs = [normalize(Error) || Error <- Errors],
     [string:join(ErrorsStrs, "\n"), "\n"];
 normalize(Other) ->
     io_lib:format("~p", [Other]).
+
+normalize_sys_core_fold(no_clause_match) ->
+    "no clause will match";
+normalize_sys_core_fold(nomatch_guard) ->
+    "no guard will match";
+normalize_sys_core_fold(Other) ->
+    atom_to_list(Other).
 
 normalize_erl_lint(Line, Reason) ->
     io_lib:format("line ~p: ~s", [Line, normalize_erl_lint(Reason)]).

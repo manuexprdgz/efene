@@ -81,10 +81,11 @@ to_code(Path, Opts) ->
             case compile:forms(Ast, [return, strong_validation|Opts]) of
                 {error, _Errors, _Warnings}=Error -> Error;
                 error -> {error, [{error, compile_forms_error}], []};
-                _ ->
+                {ok, _ModuleName0, [{_FileName0, Warnings0}]} ->
                     case compile:forms(Ast, Opts) of
-                        {ok, ModuleName, Code} -> {ok, ModuleName, Code, []};
-                        {ok, _ModuleName, _Code, _Warnings}=Res -> Res;
+                        {ok, ModuleName, Code} -> {ok, ModuleName, Code, Warnings0};
+                        {ok, ModuleName, Code, Warnings} ->
+                            {ok, ModuleName, Code, Warnings0 ++ Warnings};
                         error -> {error, [{error, compile_forms_error}], []};
                         {error, _Errors, _Warnings}=Error -> Error
                     end
@@ -195,7 +196,6 @@ main(["shell"]) ->
 main(["beam", File, OutputDir]) ->
     case compile(File, OutputDir, [debug_info]) of
         {ok, CompileInfo} ->
-            io:format("compile ok ~p~n", [CompileInfo]),
             print_errors(proplists:get_value(warnings, CompileInfo, []), "warnings");
         {error, Errors, Warnings} ->
             print_errors(Errors, "errors"),
