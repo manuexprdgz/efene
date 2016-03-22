@@ -182,6 +182,14 @@ normalize_erl_lint({wildcard_in_update, Name}) ->
     io_lib:format("wildcard in update: ~p", [Name]);
 normalize_erl_lint({call_to_redefined_old_bif, NA}) ->
     io_lib:format("call to redefined old bif: ~s", [format_mfa_or_na(NA)]);
+normalize_erl_lint({duplicated_export, NA}) ->
+    io_lib:format("duplicated export: ~s", [format_mfa_or_na(NA)]);
+normalize_erl_lint({not_exported_opaque, NA}) ->
+    io_lib:format("not exported opaque: ~s", [format_mfa_or_na(NA)]);
+normalize_erl_lint({deprecated, NA, Desc}) ->
+    io_lib:format("deprecated: ~s ~s", [format_mfa_or_na(NA), Desc]);
+normalize_erl_lint({bad_bitsize, Val}) ->
+    io_lib:format("bad bitsize: ~s", [Val]);
 normalize_erl_lint(Other) ->
     io_lib:format("other: ~p", [Other]).
 
