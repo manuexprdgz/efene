@@ -1,8 +1,8 @@
-[{<<"aleppo">>,
-  {git,"https://github.com/ErlyORM/aleppo",
-       {ref,"747c18dab7c24e4674576a6b0b22e4e4ebfe84d5"}},
-  0},
- {<<"ast_walk">>,
-  {git,"https://github.com/marianoguerra/ast_walk",
-       {ref,"e8435750693d0ab8fa749264d64e9ca462814a5d"}},
-  0}].
+{"1.1.0",
+[{<<"aleppo">>,{pkg,<<"aleppo">>,<<"0.9.0">>},0},
+ {<<"ast_walk">>,{pkg,<<"ast_walk">>,<<"0.1.0">>},0}]}.
+[
+{pkg_hash,[
+ {<<"aleppo">>, <<"43B4EC269FA136E39DCECBD4323D4346E0EF069A62528A9154F1BB3ACD26E3E4">>},
+ {<<"ast_walk">>, <<"443AFF160305A091AA866C7CD82C0AEBF675A70AA7B25D817707EF4A94EB6AEB">>}]}
+].
