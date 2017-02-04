@@ -8,4 +8,4 @@ done
 DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
 cd $DIR
-erl -run efene main shell $@ -noshell -noinput -pa ebin 
+erl -run efene main shell $@ -noshell -noinput -pa ./_build/default/lib/*/ebin/
