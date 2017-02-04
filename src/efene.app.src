@@ -1,10 +1,14 @@
 {application, efene, [
 	{description, "A Programming Language for the Erlang VM"},
-	{vsn, "0.1.0"},
+	{vsn, "0.9.9"},
 	{modules, []},
 	{registered, []},
 	{applications, [
 		kernel,
 		stdlib
-	]}
+	]},
+
+    {maintainers,, ["Mariano Guerra"]},
+    {licenses, ["APL 2.0"]},
+    {links, [{"Github", "https://github.com/efene/efene"}]}
 ]}.
