@@ -1,1 +1,8 @@
-[].
+[{<<"aleppo">>,
+  {git,"https://github.com/ErlyORM/aleppo",
+       {ref,"747c18dab7c24e4674576a6b0b22e4e4ebfe84d5"}},
+  0},
+ {<<"ast_walk">>,
+  {git,"https://github.com/marianoguerra/ast_walk",
+       {ref,"e8435750693d0ab8fa749264d64e9ca462814a5d"}},
+  0}].
