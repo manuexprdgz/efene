@@ -106,6 +106,7 @@ compile(Path, DestPath, Opts) ->
             BeamPath = filename:join(DestPath, get_module_beam_name(Path)),
             case bin_to_file(Code, BeamPath) of
                 error -> {error, [{file_write_error, BeamPath}], []};
+                {error, enoent} -> {error, [{file_write_error, BeamPath}], []};
                 ok -> {ok, [{warnings, Warnings}, {module_name, ModuleName}]}
             end;
         Other -> Other
