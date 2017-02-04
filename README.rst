@@ -1,31 +1,34 @@
 efene
 =====
 
-Alternative syntax for the Erlang Programming Language focusing on simplicity, ease of use and programmer UX.
+Alternative syntax for the Erlang Programming Language focusing on simplicity,
+ease of use and programmer UX.
 
-visit `efene.org <http://efene.org>`_ for documentation and `quickstart <http://efene.org/quickstart.html>`_
+Visit `efene.org <http://efene.org>`_ for documentation and `quickstart <http://efene.org/quickstart.html>`_
 
 Build
 -----
 
 ::
 
-    make
+    rebar3 compile
 
 Use
 ---
 
 For users we provide a `rebar3 plugin <http://efene.org/rebar-plugin.html>`_
-if you are developing there's a simple shell script to use efene while developing::
+if you are developing there's a simple escript to use efene while developing::
 
-    fn.sh beam file.fn
-    fn.sh rawlex file.fn
-    fn.sh lex file.fn
-    fn.sh ast file.fn
-    fn.sh mod file.fn
-    fn.sh erl file.fn
-    fn.sh erlast file.fn
-    fn.sh pprint file.fn
+    rebar3 escriptize
+
+    ./_build/default/bin/efene beam file.fn
+    ./_build/default/bin/efene rawlex file.fn
+    ./_build/default/bin/efene lex file.fn
+    ./_build/default/bin/efene ast file.fn
+    ./_build/default/bin/efene mod file.fn
+    ./_build/default/bin/efene erl file.fn
+    ./_build/default/bin/efene erlast file.fn
+    ./_build/default/bin/efene pprint file.fn
 
 
 License
