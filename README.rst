@@ -30,7 +30,6 @@ if you are developing there's a simple escript to use efene while developing::
     ./_build/default/bin/efene erlast file.fn
     ./_build/default/bin/efene pprint file.fn
 
-
 License
 -------
 
