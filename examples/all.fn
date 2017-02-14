@@ -46,6 +46,7 @@ fn types @public
     'lala'
     'hi \'there\'!'
     'hi "there"'
+    #b {'a': binary, 'sd': binary}
   case char:
     A = #c "A"
     Hello = [#c "h", #c "e", #c "l", #c "l", #c "o"]

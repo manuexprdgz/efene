@@ -17,6 +17,8 @@ type_specifiers_to_ast(Line, TSList, State) ->
 
 parse_bin_key_element(?Var(Line, Name)) -> {ok, {var, Line, Name}};
 parse_bin_key_element(?Int(Line, Value)) -> {ok, {integer, Line, Value}};
+parse_bin_key_element({val, Line, bstring, Val}) ->
+    {ok, {bin, Line, [{bin_element, Line, {string, Line, Val}, default, default}]}};
 parse_bin_key_element(Other) -> {error, {invalid_bin_key, Other}}.
 
 % if value is the _ var assume defaults
@@ -39,7 +41,7 @@ to_bin_element({kv, Line, Key, ?S(_MapLine, map, Fields)}, State) ->
             parse_bin_element_fields(Line, Fields, State, InitialState);
         {error, _Reason} ->
             State1 = fn_to_erl:add_error(State, invalid_bin_type_specifier_field, Line,
-                                         fn_to_erl:expected_got("var or integer", Key)),
+                                         fn_to_erl:expected_got("binary string, var or integer", Key)),
             {{atom, Line, error}, State1}
     end;
 
