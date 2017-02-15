@@ -51,14 +51,20 @@ to_bin_element(Other, State) ->
                        fn_to_erl:expected_got("_, integer or map", Other)),
     {{atom, Line, error}, State1}.
 
+bin_element_size(Line, NewSize, T, State, {BeType, BeLine, BeName, _OldSize, Params}) ->
+    {ENewSize, State1} = fn_to_erl:ast_to_ast(NewSize, State),
+    NewBinElement = {BeType, BeLine, BeName, ENewSize, Params},
+    parse_bin_element_fields(Line, T, State1, NewBinElement).
+
 parse_bin_element_fields(_Line, [], State, BinElement) ->
     {BinElement, State};
 
+parse_bin_element_fields(Line, [{kv, _Line, ?Atom(size), ?Var(_)=NewSize}|T],
+                         State, BinElement) ->
+    bin_element_size(Line, NewSize, T, State, BinElement);
 parse_bin_element_fields(Line, [{kv, _Line, ?Atom(size), ?V(_, integer, _Size)=NewSize}|T],
-                         State, {BeType, BeLine, BeName, _OldSize, Params}) ->
-    {ENewSize, State1} = fn_to_erl:ast_to_ast(NewSize, State),
-    NewBinElement = {BeType, BeLine, BeName, ENewSize, Params},
-    parse_bin_element_fields(Line, T, State1, NewBinElement);
+                         State, BinElement) ->
+    bin_element_size(Line, NewSize, T, State, BinElement);
 
 parse_bin_element_fields(Line, [{kv, _Line, ?Atom(unit), ?V(_, integer, Unit)}|T],
                          State, {BeType, BeLine, BeName, BeSize, Params})

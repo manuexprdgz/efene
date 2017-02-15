@@ -110,6 +110,8 @@ fn types @public
             B: {size: 8, type: float, sign: signed, endianness: little, unit: 16}}
     B1 = #b {1: 4, V: _, 3: {}, 4: float}
     Packet = nil
+    Size = 6
+    #b {Size: 8, Data: {type: binary, size: Size}}
     #b {Version:4, IHL:4, TypeOfService:8, TotalLength:16,  Identification:16,
         FlagX:1, FlagD:1, FlagM:1,  FragmentOffset:13, TTL:8, Protocol:8,
         HeaderCheckSum:16, SourceAddress:32, DestinationAddress:32,
