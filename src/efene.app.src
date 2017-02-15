@@ -1,12 +1,9 @@
 {application, efene, [
-	{description, "A Programming Language for the Erlang VM"},
-	{vsn, "0.9.10"},
-	{modules, []},
-	{registered, []},
-	{applications, [
-		kernel,
-		stdlib
-	]},
+    {description, "A Programming Language for the Erlang VM"},
+    {vsn, "0.9.11"},
+    {modules, []},
+    {registered, []},
+    {applications, [kernel, stdlib, aleppo]},
 
     {maintainers, ["Mariano Guerra"]},
     {licenses, ["APL 2.0"]},

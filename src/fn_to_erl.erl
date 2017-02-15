@@ -53,22 +53,22 @@ ast_to_ast({attr, Line, [?Atom(vsn=Name)], [Vsn], noresult}, #{level := 0}=State
     R = {attribute, Line, Name, erl_syntax:concrete(EVsn)},
     {R, State1#{level => 0}};
 %-include(Path).
-ast_to_ast({attr, Line, [?Atom(include)], [?V(_, string, Path)], noresult},
-           #{level := 0, module := Module, macros := Macros}=State) ->
-    case fn_erl_macro:parse_to_include(Path) of
-        {ok, Ast, FileMacros} ->
-            % TODO: warn about overriding macros
-            NewMacros = dict:merge(fun(_Key, _Value1, Value2) -> Value2 end,
-                                   Macros, FileMacros),
-            % TODO: get the actual path
-            ModulePath = atom_to_list(Module) ++ ".fn",
-            {[{attribute, Line, file, {ModulePath, Line}}|lists:reverse(Ast)],
-             State#{macros => NewMacros}};
-        {error, Reason} ->
+ast_to_ast({attr, Line, [?Atom(include_lib)], [?V(_, string, Path)], noresult},
+           State) ->
+    [Module | Rest] = filename:split(Path),
+    case code:lib_dir(Module) of
+        {error, bad_name} ->
+            Reason = not_found,
+            %% TODO: add error pretty message
             State1 = add_error(State, error_parsing_include_file, Line, {Path, Reason}),
             R = {atom, Line, error},
-            {R, State1}
+            {R, State1};
+         ModuleFullPath ->
+            FullPath = filename:join([ModuleFullPath|Rest]),
+            include_macro_file(Line, FullPath, State)
     end;
+ast_to_ast({attr, Line, [?Atom(include)], [?V(_, string, Path)], noresult}, State) ->
+    include_macro_file(Line, Path, State);
 
 %-behavio[u]r(name)
 ast_to_ast({attr, Line, [?Atom(AttrName)], [?Atom(BName)], noresult}, #{level := 0}=State) 
@@ -659,4 +659,20 @@ to_record_field_decl(Other, State) ->
     State1 = add_error(State, bad_record_field_decl, Line,
                        expected_got("atom or assignment", {ast, Other})),
     {{atom, Line, error}, State1}.
+
+include_macro_file(Line, Path, #{level := 0, module := Module, macros := Macros}=State) ->
+    case fn_erl_macro:parse_to_include(Path) of
+        {ok, Ast, FileMacros} ->
+            % TODO: warn about overriding macros
+            NewMacros = dict:merge(fun(_Key, _Value1, Value2) -> Value2 end,
+                                   Macros, FileMacros),
+            % TODO: get the actual path
+            ModulePath = atom_to_list(Module) ++ ".fn",
+            {[{attribute, Line, file, {ModulePath, Line}}|lists:reverse(Ast)],
+             State#{macros => NewMacros}};
+        {error, Reason} ->
+            State1 = add_error(State, error_parsing_include_file, Line, {Path, Reason}),
+            R = {atom, Line, error},
+            {R, State1}
+    end.
 
