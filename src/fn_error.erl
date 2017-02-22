@@ -37,7 +37,6 @@ type_to_string(invalid_type_value) -> <<"Invalid Type Value">>;
 type_to_string(invalid_type_argument) -> <<"Invalid Type Argument">>;
 type_to_string(invalid_catch) -> <<"Invalid Catch">>;
 type_to_string(duplicated_function_spec) -> <<"Duplicated Function Spec">>;
-type_to_string(useless_building) -> <<"A term is constructed, but never used">>;
 type_to_string(Other) -> atom_to_list(Other).
 
 format_maybe_ast({ast, Ast}) -> fn_pp:print(Ast);
@@ -73,6 +72,8 @@ normalize_sys_core_fold(no_clause_match) ->
     "no clause will match";
 normalize_sys_core_fold(nomatch_guard) ->
     "no guard will match";
+normalize_sys_core_fold(useless_building) ->
+    "A term is constructed, but never used";
 normalize_sys_core_fold(Other) ->
     atom_to_list(Other).
 
