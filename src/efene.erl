@@ -68,7 +68,7 @@ pprint(Path) ->
 
 to_erl(Path) ->
     case to_mod(Path) of
-        {ok, Mod} -> erl_prettypr:format(erl_syntax:form_list(Mod));
+        {ok, [_|Mod]} -> erl_prettypr:format(erl_syntax:form_list(Mod));
         Other -> Other
     end.
 
