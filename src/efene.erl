@@ -177,6 +177,7 @@ main([]) ->
     io:format("\tefene mod <file>: print erlang absform with module attributes~n"),
     io:format("\tefene erl <file>: print erlang code for <file>~n"),
     io:format("\tefene erl2ast <file.erl>: print erlang absform <file.erl>~n"),
+    io:format("\tefene erl2erl <file.erl>: parse and pretty print erlang <file.erl>~n"),
     io:format("\tefene beam <file> [<outdir>]: compile <file> to beam bytecode to <outdir>~n"),
     io:format("\tefene pprint <file>: pretty print code from <file> (experimental)~n"),
     ok;
@@ -194,6 +195,9 @@ main(["erl", File]) ->
     print(to_erl(File));
 main(["erl2ast", File]) ->
     print(from_erl(File));
+main(["erl2erl", File]) ->
+    {ok, Ast} = from_erl(File),
+    print(erl_prettypr:format(erl_syntax:form_list(Ast)));
 main(["beam", File]) ->
     main(["beam", File, "."]);
 main(["shell"]) ->
