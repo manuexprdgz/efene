@@ -10,7 +10,7 @@
 @type(option(X)) -> (some, X) or none
 
 @record(account) -> (username, password, email)
-@record(post) -> (title is string(), content = "" is string(), author = "anonymous")
+@record(post) -> (title, content = "", author = "anonymous")
 @record(state) -> (counter = 0, last_modification)
 
 @opaque(state) -> #r state
@@ -165,6 +165,9 @@ fn types @public
   case compile_info:
        Line = #i line
        Module = #i module
+       ModuleString = #i module_string
+       FunctionName = #i function_name
+       FunctionArity = #i function_arity
   case begin_expr:
        begin
            io.format("hello ~p", ["world"])

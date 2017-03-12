@@ -81,9 +81,9 @@ ast_to_ast(?E(Line, fn, {Name, Attrs, ?E(_CLine, 'case', Cases)}), #{level := 0}
     {cmatch, _FCLine, {FCCond, _FCWhen, _FCBody}} = FirstCase,
     Arity = length(FCCond),
     {ok, FixedCases} = expand_case_else_match(Cases),
-    StateLevel1 = State#{level => 1},
-    {EFixedCases, State1} = ast_to_ast(FixedCases, StateLevel1),
     BareName = unwrap(Name),
+    StateLevel1 = State#{level => 1, function_name => BareName, function_arity => Arity},
+    {EFixedCases, State1} = ast_to_ast(FixedCases, StateLevel1),
     EFn = {function, Line, BareName, Arity, EFixedCases},
     FnRef = {Name, Arity},
     {R, RestAttrs, State2} = case extract_spec_attr(FnRef, Attrs, [], nil, State1) of
