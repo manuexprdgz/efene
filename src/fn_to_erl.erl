@@ -100,16 +100,10 @@ ast_to_ast(?E(Line, fn, {Name, Attrs, ?E(_CLine, 'case', Cases)}), #{level := 0}
 % record declaration
 ast_to_ast({attr, Line, [?Atom(record)], [?Atom(RecordName)], ?S(_TLine, tuple, Fields)},
            #{level := 0}=State) ->
-    {FieldsAndTypes, State1} = lists:mapfoldl(fun to_record_field_decl/2,
+    {RFields, State1} = lists:mapfoldl(fun to_record_field_decl/2,
                                               State#{level => 1}, Fields),
-    {RFields, RTypes} = lists:foldl(fun ({type, Field, Type}, {Fs, Ts}) ->
-                                            {[Field|Fs], [Type|Ts]};
-                                        (Field, {Fs, Ts}) ->
-                                            {[Field|Fs], Ts}
-                                    end, {[], []}, FieldsAndTypes),
-
-    R = {attribute, Line, record, {RecordName, lists:reverse(RFields)}},
-    maybe_type_record(R, Line, RecordName, RTypes, State1#{level => 0});
+    R = {attribute, Line, record, {RecordName, RFields}},
+    {R, State1#{level => 0}};
 
 % type and opaque without result, error
 ast_to_ast({attr, Line, [?Atom(Type)], _Params, noresult}=Ast, #{level := 0}=State)
@@ -612,11 +606,6 @@ make_fun_attrs(?V(Line, atom, Name), Arity, Accum) ->
                                ast_list_to_cons(Accum, Line)]},
     {attribute, Line, fn_attrs, erl_syntax:concrete(ConsAttrs)}.
 
-maybe_type_record(R, _Line, _RecordName, [], State) -> {R, State};
-maybe_type_record(R, Line, RecordName, Types, State) ->
-    {RType, State1} = fn_spec:parse_record_types(RecordName, Line, Types, State),
-    {[RType, R], State1}.
-
 path_to_ext_string(Path) ->
     Parts = lists:map(fun (?Var(Name)) -> "var_" ++ atom_to_list(Name);
                           (?Atom(Name)) -> "atom_" ++ atom_to_list(Name)
@@ -639,14 +628,15 @@ handle_tag(Line, Prefix, Path, FullPath, Ast, State=#{extensions := Extensions})
         Other -> Other
     end.
 
-to_record_field_decl(?O(Line, '=', ?V(FLine, atom, FieldName), ?O(_OLine, is, Val, Type)),
-                     State) ->
-    {R, State1} = to_record_field_decl(?O(Line, '=', ?V(FLine, atom, FieldName), Val), State),
-    {{type, R, {Line, has_default, R, Type}}, State1};
-to_record_field_decl(?O(_OLine, is, ?V(Line, 'atom', FieldName), Type),
-                     State) ->
-    {R, State1} = to_record_field_decl(?V(Line, 'atom', FieldName), State),
-    {{type, R, {Line, no_default, R, Type}}, State1};
+to_record_field_decl(?O(Line, '=', ?V(FLine, atom, FieldName), ?O(_OLine, is, Val, Type)), State) ->
+    {EType, State1} = fn_spec:parse_type_value(Type, State),
+    {EVal, State2} = ast_to_ast(Val, State1),
+    R = {typed_record_field, {record_field, Line, {atom, FLine, FieldName}, EVal}, EType},
+    {R, State2};
+to_record_field_decl(?O(Line, is, ?V(FLine, 'atom', FieldName), Type), State) ->
+    {EType, State1} = fn_spec:parse_type_value(Type, State),
+    R = {typed_record_field, {record_field, Line, {atom, FLine, FieldName}}, EType},
+    {R, State1};
 to_record_field_decl(?O(Line, '=', ?V(FLine, atom, FieldName), Val), State) ->
     {EVal, State1} = ast_to_ast(Val, State),
     R = {record_field, Line, {atom, FLine, FieldName}, EVal},

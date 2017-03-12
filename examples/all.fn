@@ -10,7 +10,7 @@
 @type(option(X)) -> (some, X) or none
 
 @record(account) -> (username, password, email)
-@record(post) -> (title, content = "", author = "anonymous")
+@record(post) -> (title is string(), content = "" is string(), author = "anonymous", other)
 @record(state) -> (counter = 0, last_modification)
 
 @opaque(state) -> #r state
