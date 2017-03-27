@@ -36,7 +36,7 @@ Terminals
     fn atom var integer float boolean string bstring colon end nl case else match when
     begin receive after try catch for in
     hash open close sep semicolon open_list close_list
-    open_map close_map split_def_op at arrow arrowend dot larrow larrowend
+    open_map close_map cons_op at arrow arrowend dot larrow larrowend
     assign send_op
     bool_or bool_orr bool_xor bool_and bool_andd comp_op concat_op add_op mul_op
     bin_or bin_and bin_shift bin_not bool_not
@@ -181,7 +181,7 @@ e_add -> e_mul : '$1'.
 e_mul -> e_mul mul_op e_unary : op('$2', '$1', '$3').
 e_mul -> e_mul bool_andd e_unary : op('$2', '$1', '$3').
 e_mul -> e_mul bin_and e_unary : op('$2', '$1', '$3').
-e_mul -> e_unary : '$1'.
+e_mul -> l_cons : '$1'.
 
 e_unary -> bin_not literal: unary_op('$1', '$2').
 e_unary -> bool_not literal: unary_op('$1', '$2').
@@ -222,7 +222,6 @@ raw_literal -> l_string : '$1'.
 raw_literal -> l_bstring : '$1'.
 raw_literal -> l_tuple : '$1'.
 raw_literal -> l_list : '$1'.
-raw_literal -> l_cons : '$1'.
 raw_literal -> l_map : '$1'.
 raw_literal -> l_map_update : '$1'.
 raw_literal -> l_fn : '$1'.
@@ -250,7 +249,8 @@ l_tuple -> open e_assign sep seq_items close: seq_value(['$2'|'$4'], line('$1'),
 l_list -> open_list close_list : seq_value([], line('$1'), list).
 l_list -> open_list seq_items close_list : seq_value('$2', line('$1'), list).
 
-l_cons -> open_list seq_items split_def_op literal close_list : seq_value({'$2', '$4'}, line('$1'), cons).
+l_cons -> e_unary cons_op l_cons : seq_value({'$1', '$3'}, line('$1'), cons).
+l_cons -> e_unary : '$1'.
 
 guard_seq -> seq_items : ['$1'].
 guard_seq -> seq_items semicolon guard_seq :

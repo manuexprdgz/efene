@@ -176,14 +176,9 @@ ast_to_ast(?S(Line, tuple=Type, Val), State)   ->
     {EVal, State1} = ast_to_ast(Val, State),
     {{Type, Line, EVal}, State1};
 
-% [<val> :: <val]
-ast_to_ast(?S(Line, cons=Type, {[H], T}), State) ->
+% <val> :: <val>
+ast_to_ast(?S(Line, cons=Type, {H, T}), State) ->
     with_childs(State, H, T, fun (EH, ET) -> {Type, Line, EH, ET} end);
-
-% [<seq> :: <val]
-ast_to_ast(?S(Line, cons, {H, T}), State) ->
-    with_childs(State, H, T, fun (EH, ET) ->
-                                 ast_list_to_cons(lists:reverse(EH), Line, ET) end);
 
 % function reference
 ast_to_ast(?V(Line, fn_ref, {[Mod, Fun], Arity}), State) ->

@@ -55,7 +55,7 @@ SemiColon   = ;
 Endls       = (\s|\t)*(\r?\n)
 Whites      = \s+
 Tabs        = \t+
-SplitDef    = ::
+ConsOp      = ::
 Colon       = :
 Dot         = \.
 Arrow       = ->
@@ -121,14 +121,14 @@ Rules.
 {SemiColon}              : make_token(semicolon,    TokenLine, TokenChars).
 {Send}                   : make_token(send_op,      TokenLine, TokenChars).
 {Hash}                   : make_token(hash,         TokenLine, TokenChars).
-{At}                     : make_token(at,         TokenLine, TokenChars).
-{SplitDef}               : make_token(split_def_op, TokenLine, TokenChars).
-{Colon}                  : make_token(colon,     TokenLine, TokenChars).
+{At}                     : make_token(at,           TokenLine, TokenChars).
+{ConsOp}                 : make_token(cons_op,      TokenLine, TokenChars).
+{Colon}                  : make_token(colon,        TokenLine, TokenChars).
 {Dot}                    : make_token(dot,          TokenLine, TokenChars).
 {Arrow}                  : make_token(arrow,        TokenLine, TokenChars).
 {ArrowEnd}               : make_token(arrowend,     TokenLine, TokenChars).
 {LArrow}                 : make_token(larrow,       TokenLine, TokenChars).
-{LArrowEnd}              : make_token(larrowend,       TokenLine, TokenChars).
+{LArrowEnd}              : make_token(larrowend,    TokenLine, TokenChars).
 {FatArrow}               : make_token(fatarrow,     TokenLine, TokenChars).
 
 % string stuff
