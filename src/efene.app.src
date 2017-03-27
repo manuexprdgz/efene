@@ -1,6 +1,6 @@
 {application, efene, [
     {description, "A Programming Language for the Erlang VM"},
-    {vsn, "0.9.13"},
+    {vsn, "0.9.14"},
     {modules, []},
     {registered, []},
     {applications, [kernel, stdlib, aleppo]},
