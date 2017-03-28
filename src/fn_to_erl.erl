@@ -13,20 +13,23 @@
 %% limitations under the License.
 
 -module(fn_to_erl).
--export([ast_to_ast/2, to_erl/2, add_error/4, new_state/1, expected_got/2,
+-export([ast_to_ast/2, to_erl/3, add_error/4, new_state/2, expected_got/2,
         lc_to_ast/4, state_map/3, kv_to_ast/3]).
 
 -include("efene.hrl").
 
-new_state(Module) -> #{module => Module,
-                       errors => [],
-                       warnings => [],
-                       attrs => [],
-                       extensions => fn_exts:get_extensions(),
-                       macros => dict:new(),
-                       level => 0}.
+new_state(Module, Path) ->
+    #{module => Module,
+      path => Path,
+      module_dir => filename:dirname(Path),
+      errors => [],
+      warnings => [],
+      attrs => [],
+      extensions => fn_exts:get_extensions(),
+      macros => dict:new(),
+      level => 0}.
 
-to_erl(Ast, Module) -> ast_to_ast(Ast, new_state(Module)).
+to_erl(Ast, Module, Path) -> ast_to_ast(Ast, new_state(Module, Path)).
 
 ast_to_ast(Nodes, State) when is_list(Nodes) -> ast_to_ast(Nodes, [], State);
 
@@ -58,7 +61,7 @@ ast_to_ast({attr, Line, [?Atom(include_lib)], [?V(_, string, Path)], noresult},
     [Module | Rest] = filename:split(Path),
     case code:lib_dir(Module) of
         {error, bad_name} ->
-            Reason = not_found,
+            Reason = lib_not_found,
             %% TODO: add error pretty message
             State1 = add_error(State, error_parsing_include_file, Line, {Path, Reason}),
             R = {atom, Line, error},
@@ -67,8 +70,18 @@ ast_to_ast({attr, Line, [?Atom(include_lib)], [?V(_, string, Path)], noresult},
             FullPath = filename:join([ModuleFullPath|Rest]),
             include_macro_file(Line, FullPath, State)
     end;
-ast_to_ast({attr, Line, [?Atom(include)], [?V(_, string, Path)], noresult}, State) ->
-    include_macro_file(Line, Path, State);
+ast_to_ast({attr, Line, [?Atom(include)], [?V(_, string, Path)], noresult}, State=#{module_dir := ModuleDir}) ->
+    AbsPath = filename:join(ModuleDir, Path),
+    case filelib:is_regular(AbsPath) of
+        true ->
+            include_macro_file(Line, AbsPath, State);
+        false ->
+            Reason = file_not_found,
+            %% TODO: add error pretty message
+            State1 = add_error(State, error_parsing_include_file, Line, {Path, Reason}),
+            R = {atom, Line, error},
+            {R, State1}
+    end;
 
 %-behavio[u]r(name)
 ast_to_ast({attr, Line, [?Atom(AttrName)], [?Atom(BName)], noresult}, #{level := 0}=State) 
@@ -653,9 +666,7 @@ include_macro_file(Line, Path, State) ->
             include_macro_file_erl(Line, Path, State)
     end.
 
-include_macro_file_fn(Line, Path, #{level := 0, module := Module}=State) ->
-    % TODO: get the actual path
-    ModulePath = atom_to_list(Module) ++ ".fn",
+include_macro_file_fn(Line, Path, #{level := 0, module := Module, path := ModulePath}=State) ->
     case efene:to_erl_ast(Path) of
         % TODO: merge errors, declared functions and so on
         {ok, {Ast, _HfnState}} ->
@@ -667,14 +678,13 @@ include_macro_file_fn(Line, Path, #{level := 0, module := Module}=State) ->
             {R, State1}
     end.
 
-include_macro_file_erl(Line, Path, #{level := 0, module := Module, macros := Macros}=State) ->
+include_macro_file_erl(Line, Path, #{level := 0, module := Module,
+                                     path := ModulePath, macros := Macros}=State) ->
     case fn_erl_macro:parse_to_include(Path) of
         {ok, Ast, FileMacros} ->
             % TODO: warn about overriding macros
             NewMacros = dict:merge(fun(_Key, _Value1, Value2) -> Value2 end,
                                    Macros, FileMacros),
-            % TODO: get the actual path
-            ModulePath = atom_to_list(Module) ++ ".fn",
             {[{attribute, Line, file, {ModulePath, Line}}|lists:reverse(Ast)],
              State#{macros => NewMacros}};
         {error, Reason} ->

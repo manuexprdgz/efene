@@ -35,8 +35,7 @@ to_raw_lex(Path) -> with_file_content(Path, fun str_to_raw_lex/1).
 to_lex(Path)     -> with_file_content(Path, fun str_to_lex/1).
 to_ast(Path)     -> with_file_content(Path, fun str_to_ast/1).
 to_erl_ast(Path) -> with_file_content(Path, fun (Str) ->
-                                                Module = get_module_name(Path),
-                                                str_to_erl_ast(Str, Module)
+                                                str_to_erl_ast(Str, Path)
                                             end).
 
 to_mod(Path) ->
@@ -144,10 +143,11 @@ force_extensions_load() ->
     fn_ext_val_atom_r:handle(nil, nil, nil),
     fn_ext_val_var__:handle(nil, nil, nil).
 
-str_to_erl_ast(String, Module) ->
+str_to_erl_ast(String, Path) ->
+    Module = get_module_name(Path),
     force_extensions_load(),
     case str_to_ast(String) of
-        {ok, Ast} -> {ok, fn_to_erl:to_erl(Ast, Module)};
+        {ok, Ast} -> {ok, fn_to_erl:to_erl(Ast, Module, Path)};
         Other -> Other
     end.
 
