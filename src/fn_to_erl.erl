@@ -467,7 +467,7 @@ to_tuple_clause({clause, Line, Matches, Guard, Body}) ->
     {clause, Line, [{tuple, Line, Matches}], Guard, Body}.
 
 for_qualifier_to_ast({filter, Ast}, State) -> ast_to_ast(Ast, State);
-for_qualifier_to_ast({Gen, Line, Left, Right}, State) 
+for_qualifier_to_ast({Gen, Line, Left, Right}, State)
         when Gen =:= generate orelse Gen =:= b_generate ->
     {{ELeft, ERight}, State1} = kv_to_ast(Left, Right, State),
     R = {generate, Line, ELeft, ERight},
@@ -645,7 +645,29 @@ to_record_field_decl(Other, State) ->
                        expected_got("atom or assignment", {ast, Other})),
     {{atom, Line, error}, State1}.
 
-include_macro_file(Line, Path, #{level := 0, module := Module, macros := Macros}=State) ->
+include_macro_file(Line, Path, State) ->
+    case filename:extension(Path) of
+        ".hfn" ->
+            include_macro_file_fn(Line, Path, State);
+        _ ->
+            include_macro_file_erl(Line, Path, State)
+    end.
+
+include_macro_file_fn(Line, Path, #{level := 0, module := Module}=State) ->
+    % TODO: get the actual path
+    ModulePath = atom_to_list(Module) ++ ".fn",
+    case efene:to_erl_ast(Path) of
+        % TODO: merge errors, declared functions and so on
+        {ok, {Ast, _HfnState}} ->
+            AstWithLine = [{attribute, Line, file, {Path, 1}}|Ast],
+            {[{attribute, Line, file, {ModulePath, Line}}|lists:reverse(AstWithLine)], State};
+        {error, Reason} ->
+            State1 = add_error(State, error_parsing_include_file, Line, {Path, Reason}),
+            R = {atom, Line, error},
+            {R, State1}
+    end.
+
+include_macro_file_erl(Line, Path, #{level := 0, module := Module, macros := Macros}=State) ->
     case fn_erl_macro:parse_to_include(Path) of
         {ok, Ast, FileMacros} ->
             % TODO: warn about overriding macros
