@@ -666,7 +666,7 @@ include_macro_file(Line, Path, State) ->
             include_macro_file_erl(Line, Path, State)
     end.
 
-include_macro_file_fn(Line, Path, #{level := 0, module := Module, path := ModulePath}=State) ->
+include_macro_file_fn(Line, Path, #{level := 0, path := ModulePath}=State) ->
     case efene:to_erl_ast(Path) of
         % TODO: merge errors, declared functions and so on
         {ok, {Ast, _HfnState}} ->
@@ -678,8 +678,7 @@ include_macro_file_fn(Line, Path, #{level := 0, module := Module, path := Module
             {R, State1}
     end.
 
-include_macro_file_erl(Line, Path, #{level := 0, module := Module,
-                                     path := ModulePath, macros := Macros}=State) ->
+include_macro_file_erl(Line, Path, #{level := 0, path := ModulePath, macros := Macros}=State) ->
     case fn_erl_macro:parse_to_include(Path) of
         {ok, Ast, FileMacros} ->
             % TODO: warn about overriding macros
