@@ -116,13 +116,16 @@ from_erl(Path) -> epp:parse_file(Path, [], []).
 str_to_raw_lex(String) -> fn_lexer:string(String).
 
 str_to_lex(String) ->
-    case fn_lexer:string(String) of
+    try fn_lexer:string(String) of
         {ok, Tokens, Endline} ->
             CleanTokens = clean_tokens(Tokens),
             {ok, CleanTokens, Endline};
         {eof, Endline} -> {error, {Endline, fn_lexer, {eof, Endline}}};
         {error, Error} -> {error, Error};
         {error, Error, _} -> {error, Error}
+    catch
+        throw:{error, Reason} ->
+            {error, Reason}
     end.
 
 str_to_ast(Str) ->
