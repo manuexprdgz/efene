@@ -64,6 +64,8 @@ normalize({Line, erl_lint, Reason}) ->
     io_lib:format("line ~p: ~s", [Line, erl_lint:format_error(Reason)]);
 normalize({Line, sys_core_fold, Reason}) ->
     io_lib:format("line ~p: ~s", [Line, sys_core_fold:format_error(Reason)]);
+normalize({Line, v3_kernel, Reason}) ->
+    io_lib:format("line ~p: ~s", [Line, v3_kernel:format_error(Reason)]);
 normalize({_Path, Errors}) when is_list(Errors) ->
     ErrorsStrs = [normalize(Error) || Error <- Errors],
     [string:join(ErrorsStrs, "\n"), "\n"];
