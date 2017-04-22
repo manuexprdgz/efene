@@ -81,7 +81,7 @@ print(Data) ->
     io:format("~s~n", [pprint_data(Data)]).
 
 str_to_erl_ast(String, Module) ->
-    State0 = fn_to_erl:new_state(Module),
+    State0 = fn_to_erl:new_state(Module, "repl"),
     State = State0#{level => 1},
 
     case efene:str_to_ast(String) of
