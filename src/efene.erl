@@ -14,7 +14,9 @@
 
 -module(efene).
 -export([main/0, main/1, compile/2, compile/3, to_code/1, to_code/2,
-         to_raw_lex/1, to_lex/1, to_ast/1, to_erl/1, to_erl_ast/1, to_mod/1,
+         to_raw_lex/1, to_lex/1, to_ast/1,
+         to_erl/1, to_erl_ast/1, to_erl_ast/2,
+         to_mod/1,
          pprint/1, print_errors/2]).
 
 -export([str_to_ast/1]).
@@ -34,9 +36,9 @@ with_file_content(Path, Fn) ->
 to_raw_lex(Path) -> with_file_content(Path, fun str_to_raw_lex/1).
 to_lex(Path)     -> with_file_content(Path, fun str_to_lex/1).
 to_ast(Path)     -> with_file_content(Path, fun str_to_ast/1).
-to_erl_ast(Path) -> with_file_content(Path, fun (Str) ->
-                                                str_to_erl_ast(Str, Path)
-                                            end).
+to_erl_ast(Path) -> to_erl_ast(Path, #{}).
+to_erl_ast(Path, Opts) ->
+    with_file_content(Path, fun (Str) -> str_to_erl_ast(Str, Path, Opts) end).
 
 to_mod(Path) ->
     case to_erl_ast(Path) of
@@ -146,11 +148,11 @@ force_extensions_load() ->
     fn_ext_val_atom_r:handle(nil, nil, nil),
     fn_ext_val_var__:handle(nil, nil, nil).
 
-str_to_erl_ast(String, Path) ->
+str_to_erl_ast(String, Path, Opts) ->
     Module = get_module_name(Path),
     force_extensions_load(),
     case str_to_ast(String) of
-        {ok, Ast} -> {ok, fn_to_erl:to_erl(Ast, Module, Path)};
+        {ok, Ast} -> {ok, fn_to_erl:to_erl(Ast, Module, Path, Opts)};
         Other -> Other
     end.
 

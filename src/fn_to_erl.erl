@@ -13,7 +13,7 @@
 %% limitations under the License.
 
 -module(fn_to_erl).
--export([ast_to_ast/2, to_erl/3, add_error/4, new_state/2, expected_got/2,
+-export([ast_to_ast/2, to_erl/3, to_erl/4, add_error/4, new_state/2, expected_got/2,
         lc_to_ast/4, state_map/3, kv_to_ast/3]).
 
 -include("efene.hrl").
@@ -27,9 +27,38 @@ new_state(Module, Path) ->
       attrs => [],
       extensions => fn_exts:get_extensions(),
       macros => dict:new(),
+      fns => [],
+      fns_by_name => #{},
       level => 0}.
 
-to_erl(Ast, Module, Path) -> ast_to_ast(Ast, new_state(Module, Path)).
+to_erl(Ast, Module, Path) ->
+    to_erl(Ast, Module, Path, #{}).
+
+to_erl(Ast, Module, Path, Opts) ->
+    {EAst, State} = ast_to_ast(Ast, new_state(Module, Path)),
+    case maps:get(replace_fn_holders, Opts, true) of
+        true ->
+            EAst1 = replace_fn_holders(EAst, State, [], #{}),
+            {EAst1, State};
+        false ->
+            {EAst, State}
+    end.
+
+replace_fn_holders([], _State, Accum, _EmittedFns) ->
+    lists:reverse(Accum);
+replace_fn_holders([{fn, Name, Arity}|T], State=#{fns_by_name:=FnsByName},
+                   Accum, EmittedFns) ->
+    case maps:get({Name, Arity}, EmittedFns, undefined) of
+        undefined ->
+            FnKey = {Name, Arity},
+            FnInfo = maps:get(FnKey, FnsByName),
+            #{ast := Ast} = FnInfo,
+            replace_fn_holders(T, State, [Ast|Accum], EmittedFns#{FnKey => FnInfo});
+        _ ->
+            replace_fn_holders(T, State, Accum, EmittedFns)
+    end;
+replace_fn_holders([H|T], State, Accum, EmittedFns) ->
+    replace_fn_holders(T, State, [H|Accum], EmittedFns).
 
 ast_to_ast(Nodes, State) when is_list(Nodes) -> ast_to_ast(Nodes, [], State);
 
@@ -67,29 +96,33 @@ ast_to_ast({attr, Line, [?Atom(include_lib)], [?V(_, string, Path)], noresult},
             R = {atom, Line, error},
             {R, State1};
          ModuleFullPath ->
-            FullPath = filename:join([ModuleFullPath|Rest]),
+            FullPath = filename:absname(filename:join([ModuleFullPath|Rest])),
             include_macro_file(Line, FullPath, State)
     end;
-ast_to_ast({attr, Line, [?Atom(include)], [?V(_, string, Path)], noresult}, State=#{module_dir := ModuleDir}) ->
-    AbsPath = filename:join(ModuleDir, Path),
+ast_to_ast({attr, Line, [?Atom(include)], [?V(_, string, Path)], noresult},
+           State=#{module_dir := ModuleDir}) ->
+    AbsPath = filename:absname(filename:join(ModuleDir, Path)),
     case filelib:is_regular(AbsPath) of
         true ->
             include_macro_file(Line, AbsPath, State);
         false ->
             Reason = file_not_found,
             %% TODO: add error pretty message
-            State1 = add_error(State, error_parsing_include_file, Line, {Path, Reason}),
+            State1 = add_error(State, error_parsing_include_file, Line, {AbsPath, Reason}),
             R = {atom, Line, error},
             {R, State1}
     end;
 
 %-behavio[u]r(name)
-ast_to_ast({attr, Line, [?Atom(AttrName)], [?Atom(BName)], noresult}, #{level := 0}=State) 
+ast_to_ast({attr, Line, [?Atom(AttrName)], [?Atom(BName)], noresult},
+           #{level := 0}=State)
         when AttrName == behavior orelse AttrName == behaviour ->
     R = {attribute, Line, AttrName, BName},
     {R, State};
 % top level function
-ast_to_ast(?E(Line, fn, {Name, Attrs, ?E(_CLine, 'case', Cases)}), #{level := 0}=State) ->
+ast_to_ast(?E(Line, fn, {Name, Attrs, ?E(_CLine, 'case', Cases)}),
+           #{level := 0, fns := Fns, fns_by_name := FnsByName,
+             module := Module, path := Path}=State) ->
     [FirstCase|_TCases] = Cases,
     {cmatch, _FCLine, {FCCond, _FCWhen, _FCBody}} = FirstCase,
     Arity = length(FCCond),
@@ -108,7 +141,12 @@ ast_to_ast(?E(Line, fn, {Name, Attrs, ?E(_CLine, 'case', Cases)}), #{level := 0}
     State3 = add_attributes(State2, fn, Line, {BareName, Arity}, Attrs),
     State4 = add_attributes(State3, fn_attrs, Line, {BareName, Arity}, RestAttrs),
     State5 = check_case_arities_equal(Cases, State4, Arity),
-    {R, State5#{level => 0}};
+    FnInfo = #{name => BareName, arity => Arity, line => Line, ast => R,
+               module => Module, module_path => Path},
+    State6 = State5#{level => 0,
+                     fns => [FnInfo|Fns],
+                     fns_by_name => FnsByName#{{BareName, Arity} => FnInfo}},
+    {{fn, BareName, Arity}, State6};
 
 % record declaration
 ast_to_ast({attr, Line, [?Atom(record)], [?Atom(RecordName)], ?S(_TLine, tuple, Fields)},
@@ -666,17 +704,26 @@ include_macro_file(Line, Path, State) ->
             include_macro_file_erl(Line, Path, State)
     end.
 
-include_macro_file_fn(Line, Path, #{level := 0, path := ModulePath}=State) ->
-    case efene:to_erl_ast(Path) of
+include_macro_file_fn(Line, Path, #{level := 0, path := ModulePath}=State0) ->
+    case efene:to_erl_ast(Path, #{replace_fn_holders => false}) of
         % TODO: merge errors, declared functions and so on
-        {ok, {Ast, _HfnState}} ->
-            AstWithLine = [{attribute, Line, file, {Path, 1}}|Ast],
-            {[{attribute, Line, file, {ModulePath, Line}}|lists:reverse(AstWithLine)], State};
+        {ok, {Ast, HfnState}} ->
+            StartLineAttr = {attribute, Line, file, {Path, 1}},
+            AstWithLine = [StartLineAttr|Ast],
+            EndLineAttr = {attribute, Line, file, {ModulePath, Line}},
+            State = merge_included_state(State0, HfnState),
+            {[EndLineAttr|lists:reverse(AstWithLine)], State};
         {error, Reason} ->
-            State1 = add_error(State, error_parsing_include_file, Line, {Path, Reason}),
+            State = add_error(State0, error_parsing_include_file, Line, {Path, Reason}),
             R = {atom, Line, error},
-            {R, State1}
+            {R, State}
     end.
+
+merge_included_state(CurState=#{fns := Fns, fns_by_name := FnsByName},
+                     #{fns := InclFns, fns_by_name := InclFnsByName}) ->
+    NewFns = InclFns ++ Fns,
+    NewFnsByName = maps:merge(FnsByName, InclFnsByName),
+    CurState#{fns => NewFns, fns_by_name => NewFnsByName}.
 
 include_macro_file_erl(Line, Path, #{level := 0, path := ModulePath, macros := Macros}=State) ->
     case fn_erl_macro:parse_to_include(Path) of
