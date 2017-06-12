@@ -13,7 +13,7 @@
 %% limitations under the License.
 
 -module(fn_error).
--export([to_string/2, normalize/1]).
+-export([to_string/2, normalize/1, normalize_warning/1]).
 
 to_string(Module, Errors) when is_list(Errors) ->
     lists:map(fun (Error) -> to_string(Module, Error) end, Errors);
@@ -70,4 +70,11 @@ normalize({_Path, Errors}) when is_list(Errors) ->
     ErrorsStrs = [normalize(Error) || Error <- Errors],
     [string:join(ErrorsStrs, "\n"), "\n"];
 normalize(Other) ->
+    io_lib:format("~p", [Other]).
+
+normalize_warning({implicit_override, Line,
+                   #{fn := {FnName, Arity},
+                     prev_fn := #{module_path := PrevPath, line := PrevLine}}}) ->
+    io_lib:format("~p: Implicit override of function ~p/~p at line ~p (previously defined at ~p line ~p, hint: add @override attribute to supress warning)", [Line, FnName, Arity, Line, PrevPath, PrevLine]);
+normalize_warning(Other) ->
     io_lib:format("~p", [Other]).

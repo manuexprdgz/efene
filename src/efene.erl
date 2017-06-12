@@ -57,6 +57,7 @@ to_mod(Path) ->
                                     {ok, [FileAttr, ModAttr, ExportAttr|(FilteredFnAttrs ++ Ast)]}
                             end
                     end,
+            print_warnings(State),
             format_errors_or(ModAtomName, State, ToMod);
         Other -> Other
     end.
@@ -313,6 +314,13 @@ to_file(Data, Path, Mode) ->
             ok;
         Error -> Error
     end.
+
+print_warning(Warn) ->
+    io:format("warning:~s~n", [fn_error:normalize_warning(Warn)]).
+
+print_warnings(#{warnings := Warns}) ->
+    lists:foreach(fun print_warning/1, Warns),
+    ok.
 
 format_errors_or(_Module, #{errors:=[]}, Fn) -> Fn();
 format_errors_or(Module, #{errors:=Errors}, _Fn) ->

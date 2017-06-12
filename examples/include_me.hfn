@@ -2,5 +2,13 @@
 @record(user) -> (username='', password=nil)
 
 fn say_hello case:
-    io.format("hello")
+  io.format("say_hello/0")
+end
+
+fn main case:
+  io.format("main/0")
+end
+
+fn main case _:
+  io.format("main/1")
 end

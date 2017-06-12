@@ -81,9 +81,9 @@ ast_to_ast({attr, Line, [?Atom(import=Name)],
     {R, State1};
 %-vsn(<literal_term>).
 ast_to_ast({attr, Line, [?Atom(vsn=Name)], [Vsn], noresult}, #{level := 0}=State) ->
-    {EVsn, State1} = ast_to_ast(Vsn, State#{level => 1}),
+    {EVsn, State1} = ast_to_ast(Vsn, State#{level := 1}),
     R = {attribute, Line, Name, erl_syntax:concrete(EVsn)},
-    {R, State1#{level => 0}};
+    {R, State1#{level := 0}};
 %-include(Path).
 ast_to_ast({attr, Line, [?Atom(include_lib)], [?V(_, string, Path)], noresult},
            State) ->
@@ -128,7 +128,7 @@ ast_to_ast(?E(Line, fn, {Name, Attrs, ?E(_CLine, 'case', Cases)}),
     Arity = length(FCCond),
     {ok, FixedCases} = expand_case_else_match(Cases),
     BareName = unwrap(Name),
-    StateLevel1 = State#{level => 1, function_name => BareName, function_arity => Arity},
+    StateLevel1 = State#{level := 1, function_name => BareName, function_arity => Arity},
     {EFixedCases, State1} = ast_to_ast(FixedCases, StateLevel1),
     EFn = {function, Line, BareName, Arity, EFixedCases},
     FnRef = {Name, Arity},
@@ -142,19 +142,21 @@ ast_to_ast(?E(Line, fn, {Name, Attrs, ?E(_CLine, 'case', Cases)}),
     State4 = add_attributes(State3, fn_attrs, Line, {BareName, Arity}, RestAttrs),
     State5 = check_case_arities_equal(Cases, State4, Arity),
     FnInfo = #{name => BareName, arity => Arity, line => Line, ast => R,
-               module => Module, module_path => Path},
-    State6 = State5#{level => 0,
-                     fns => [FnInfo|Fns],
-                     fns_by_name => FnsByName#{{BareName, Arity} => FnInfo}},
-    {{fn, BareName, Arity}, State6};
+               module => Module, module_path => Path, attrs => Attrs},
+
+    State6 = check_fn_override(FnInfo, State5),
+    State7 = State6#{level := 0,
+                     fns := [FnInfo|Fns],
+                     fns_by_name := FnsByName#{{BareName, Arity} => FnInfo}},
+    {{fn, BareName, Arity}, State7};
 
 % record declaration
 ast_to_ast({attr, Line, [?Atom(record)], [?Atom(RecordName)], ?S(_TLine, tuple, Fields)},
            #{level := 0}=State) ->
     {RFields, State1} = lists:mapfoldl(fun to_record_field_decl/2,
-                                              State#{level => 1}, Fields),
+                                              State#{level := 1}, Fields),
     R = {attribute, Line, record, {RecordName, RFields}},
-    {R, State1#{level => 0}};
+    {R, State1#{level := 0}};
 
 % type and opaque without result, error
 ast_to_ast({attr, Line, [?Atom(Type)], _Params, noresult}=Ast, #{level := 0}=State)
@@ -546,7 +548,7 @@ state_map(Fun, Seq, State) ->
 
 add_attributes(#{attrs := AttrList}=State, Type, Line, Name, Attrs) ->
     NewAttrList = [{Type, Line, Name, Attrs}|AttrList],
-    State#{attrs => NewAttrList}.
+    State#{attrs := NewAttrList}.
 
 expected_got(Expected, Got) -> {expected, Expected, got, Got}.
 
@@ -576,7 +578,12 @@ lc_to_ast(Line, Qualifiers, Body, State) ->
 add_error(#{errors:=Errors}=State, ErrType, Line, Detail) ->
     Error = {ErrType, Line, Detail},
     NewErrors = [Error|Errors],
-    State#{errors => NewErrors}.
+    State#{errors := NewErrors}.
+
+add_warning(#{warnings:=Warns}=State, WarnType, Line, Detail) ->
+    Warn = {WarnType, Line, Detail},
+    NewWarns = [Warn|Warns],
+    State#{warnings := NewWarns}.
 
 unwrap(?V(_Line, _Type, Val)) -> Val.
 
@@ -719,23 +726,52 @@ include_macro_file_fn(Line, Path, #{level := 0, path := ModulePath}=State0) ->
             {R, State}
     end.
 
-merge_included_state(CurState=#{fns := Fns, fns_by_name := FnsByName},
-                     #{fns := InclFns, fns_by_name := InclFnsByName}) ->
+merge_included_state(CurState=#{fns := Fns, fns_by_name := FnsByName,
+                                errors := CErrors, warnings := CWarns},
+                     #{fns := InclFns, fns_by_name := InclFnsByName,
+                       errors := IErrors, warnings := IWarns}) ->
     NewFns = InclFns ++ Fns,
+    NewErrors = IErrors ++ CErrors,
+    NewWarns = IWarns ++ CWarns,
     NewFnsByName = maps:merge(FnsByName, InclFnsByName),
-    CurState#{fns => NewFns, fns_by_name => NewFnsByName}.
+    CurState#{fns := NewFns, fns_by_name := NewFnsByName,
+              errors := NewErrors, warnings := NewWarns}.
 
 include_macro_file_erl(Line, Path, #{level := 0, path := ModulePath, macros := Macros}=State) ->
     case fn_erl_macro:parse_to_include(Path) of
         {ok, Ast, FileMacros} ->
-            % TODO: warn about overriding macros
             NewMacros = dict:merge(fun(_Key, _Value1, Value2) -> Value2 end,
                                    Macros, FileMacros),
             {[{attribute, Line, file, {ModulePath, Line}}|lists:reverse(Ast)],
-             State#{macros => NewMacros}};
+             State#{macros := NewMacros}};
         {error, Reason} ->
             State1 = add_error(State, error_parsing_include_file, Line, {Path, Reason}),
             R = {atom, Line, error},
             {R, State1}
     end.
 
+check_fn_override(#{name := Name, arity := Arity, line := Line, attrs := Attrs},
+                  State=#{fns_by_name := FnsByName}) ->
+    Key = {Name, Arity},
+    case maps:get(Key, FnsByName, undefined) of
+        undefined ->
+            State;
+        FnInfo ->
+            case has_override_attr(Attrs) of
+                true -> State;
+                false ->
+                    add_warning(State, implicit_override, Line,
+                                #{fn => Key, prev_fn => FnInfo})
+            end
+    end.
+
+is_override_attr({attr, _, [{val, _, atom, override}], noparams, noresult}) ->
+    true;
+is_override_attr(_) ->
+    false.
+
+has_override_attr(Attrs) ->
+    case lists:filter(fun is_override_attr/1, Attrs) of
+        [] -> false;
+        _ -> true
+    end.

@@ -1,6 +1,8 @@
 
-@include("examples/include_me.hfn")
+@include("include_me.hfn")
 
-fn main @public case:
-    say_hello()
+fn main @public
+  @override
+case:
+  say_hello()
 end
