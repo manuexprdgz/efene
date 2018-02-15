@@ -19,6 +19,14 @@ Build
 
     rebar3 compile
 
+Run tests
+---------
+
+::
+
+    rebar3 ct
+
+
 Use
 ---
 
