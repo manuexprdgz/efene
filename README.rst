@@ -30,6 +30,17 @@ if you are developing there's a simple escript to use efene while developing::
     ./_build/default/bin/efene erlast file.fn
     ./_build/default/bin/efene pprint file.fn
 
+Test
+----
+
+The test suite is located under the test folder using the `Common Test <http://erlang.org/doc/man/common_test.html>`_ format.
+
+To execute the suite run the following command from the root folder of the repository:
+
+::
+
+    rebar3 ct
+
 License
 -------
 
