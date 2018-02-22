@@ -1,8 +1,11 @@
-efene |BuildLink|_
+efene |BuildLink|_ |CoverageLink|_
 =====
 
 .. |BuildLink| image:: https://travis-ci.org/lauramcastro/efene.svg?branch=master
 .. _BuildLink: https://travis-ci.org/lauramcastro/efene
+
+.. |CoverageLink| image:: https://coveralls.io/repos/github/lauramcastro/efene/badge.svg?branch=master
+.. _CoverageLink: https://coveralls.io/github/lauramcastro/efene?branch=master
 
 Alternative syntax for the Erlang Programming Language focusing on simplicity,
 ease of use and programmer UX.
