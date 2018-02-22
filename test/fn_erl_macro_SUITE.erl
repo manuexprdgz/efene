@@ -1,4 +1,4 @@
--module(fn_SUITE).
+-module(fn_erl_macro_SUITE).
 -compile(export_all).
 
 all() -> [eval_macro, can_expand_var_with_ref, can_expand_macro_str,
