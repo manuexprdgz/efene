@@ -22,3 +22,4 @@ scratch.erl
 examples/scratch.fn
 _build
 .rebar3
+rebar.lock
