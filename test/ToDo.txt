@@ -1,0 +1,22 @@
+Probar:
+
+1-fmt
+2-print_kvs
+3-print-seq
+4-print_path
+5-print_wclauses
+6-print_catch
+7-print_after
+8-print_clauses
+9-print_conds
+10-print_body
+11-print_ward
+12-print_when
+13-print_thread_call
+14-print_thrad_calls
+15-print_qualifier
+16-print_cualifiers
+17-precedende (varias, preguntar)
+18-should_wrap
+19-should_indent_right
+20-scape_string
