@@ -1,0 +1,17 @@
+#_ "Util functions"
+
+fn hello @public case Name:
+  io.format("Hello ~s!~n", [Name])
+end
+
+fn return_hello @public case Name:
+  io_lib.format("Hello ~s!~n", [Name])
+end
+
+fn log_hello @public case Name:
+  lager.info("Hello ~s!~n", [Name])
+end
+
+fn add @public case A, B:
+  A + B
+end

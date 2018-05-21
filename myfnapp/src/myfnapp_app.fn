@@ -1,0 +1,13 @@
+@behaviour(application)
+
+fn start @public
+    case _StartType, _StartArgs:
+        lager.info("Starting app myfnapp")
+        name_sup.start_link()
+end
+
+fn stop @public
+    case _State:
+        lager.info("Stopping app myfnapp")
+        ok
+end
